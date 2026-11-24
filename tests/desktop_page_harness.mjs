@@ -15,8 +15,27 @@
 // Layout, focus traps, portals and styling are not reproduced.
 
 // The page uses window's timers; window.open is recorded, the page must never call it.
+// location.hash and hashchange stand in for Desktop's hash router (setHash below).
 export const windowOpens = []
-globalThis.window = { setTimeout, clearTimeout, setInterval, clearInterval, open: (...args) => (windowOpens.push(args), null) }
+const windowListeners = new Map()
+globalThis.window = {
+  setTimeout, clearTimeout, setInterval, clearInterval,
+  open: (...args) => (windowOpens.push(args), null),
+  location: { hash: '' },
+  addEventListener: (type, fn) => windowListeners.set(type, (windowListeners.get(type) || new Set()).add(fn)),
+  removeEventListener: (type, fn) => windowListeners.has(type) && windowListeners.get(type).delete(fn)
+}
+
+/** Set location.hash as the hash router does; a changed value fires hashchange. */
+export function setHash(hash) {
+  const next = hash.startsWith('#') ? hash : '#' + hash
+  if (next === window.location.hash) return
+  window.location.hash = next
+  for (const fn of windowListeners.get('hashchange') || []) fn({ type: 'hashchange' })
+}
+
+// Every scrollIntoView call on a host node, with the node's props and the options.
+export const scrolls = []
 
 // ── react ────────────────────────────────────────────────────────────────────────────────────
 const instances = new Map()
@@ -142,7 +161,7 @@ function expand(node, path, parent) {
   const hid = path + '>' + node.type
   let host = hosts.get(hid)
   if (!host || host.type !== node.type) {
-    host = { type: node.type, hid, focus: () => (focused = host) }
+    host = { type: node.type, hid, focus: () => (focused = host), scrollIntoView: opts => scrolls.push({ props: host.props, opts }) }
     hosts.set(hid, host)
   }
   seenHosts.add(hid)

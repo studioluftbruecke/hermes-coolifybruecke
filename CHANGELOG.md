@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.2.8
+
+Update both halves: the plugin where Hermes runs and the one Hermes Desktop loads.
+
+- The page opens one app from a link: `/coolifybruecke?app=<uuid>` expands that app's row with its
+  deployment history and scrolls it into view. Other plugins can link here (WPBrücke's site card).
+
+- The Apps view's action buttons carry their action's colour, so a row reads before it is read:
+  Deploy blue, Stop red, Start green, Roll back amber, Cancel red. Each is a soft tint with a
+  hairline of the same colour; the label is mixed toward the page's text colour, so it stays above
+  WCAG AA contrast on that fill in light and dark. Restart and Ask stay neutral: routine, no state
+  change. Pinned actions and the "Redeploy N apps with changed env" button wear the same colours,
+  and the pipeline lines' Deploy button is toned without a fill.
+
 ## 0.2.7
 
 Update both halves: the plugin where Hermes runs and the one Hermes Desktop loads.

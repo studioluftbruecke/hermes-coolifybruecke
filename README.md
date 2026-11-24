@@ -314,6 +314,8 @@ cockpit chat (create a session titled "Cockpit", open it as a tab, fill its draf
 The Alerts card's button uses the same chat. It stores one value on your machine, the Cockpit
 chat's session id per profile, in Hermes Desktop's plugin storage. Links open in your browser
 through Desktop; where Desktop cannot open one, a notice names the address.
+Other plugins can link to one app with the in-app path `/coolifybruecke?app=<uuid>`: the page
+opens that app's row with its deployment history.
 
 ### Not included
 

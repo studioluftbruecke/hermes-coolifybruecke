@@ -47,7 +47,7 @@ import { jsx, jsxs } from 'react/jsx-runtime'
 
 const ID = 'coolifybruecke'
 // This half's version; equal to plugin.yaml's (a test checks). GET /setup names the Hermes half's.
-const VERSION = '0.2.7'
+const VERSION = '0.2.8'
 const PATH = '/coolifybruecke'
 const TAG = '[' + ID + ']'
 const SESSION_TITLE = 'Cockpit'
@@ -663,18 +663,53 @@ function requestAction(kind, target, extra) {
   currentPageState().pending.set({ kind, target, ...(extra || {}), at: Date.now() })
 }
 
-function ActionButton({ kind, label, target, resource, deployment, params, rights, variant }) {
-  const spec = rights.specs.get(kind)
+// One tone per action kind, so a row reads before it is read: blue ships, green resumes, amber
+// interrupts or undoes, red halts. A kind with no tone keeps the neutral secondary look.
+const ACTION_TONE = {
+  deploy: 'accent',
+  start: 'green',
+  stop: 'red',
+  cancel: 'red',
+  rollback: 'yellow'
+}
+
+// A Button wearing its action's colour. The shared variants know only the neutral palette and a
+// plugin brings no stylesheet of its own, so the tone goes inline: a soft tinted fill, a hairline
+// of the same colour, and a label pulled part of the way toward the page's text colour, which is
+// what keeps it readable on that fill in both light and dark. Inline styles also win over the
+// variant's hover rules, so the hover step is made here by hand.
+function ToneButton({ tone, label, title, onClick, disabled, quiet }) {
+  const color = T[tone] || T.accent
+  const [hover, setHover] = useState(false)
   return el(
     Button,
     {
-      onClick: () => requestAction(kind, target, { params, resourceName: resource && resource.name, resourceUuid: resource && resource.uuid, deployment }),
+      'data-cc-tone': tone,
+      disabled,
+      onClick,
+      onMouseEnter: () => setHover(true),
+      onMouseLeave: () => setHover(false),
       size: 'xs',
-      title: spec && spec.note ? spec.note : undefined,
-      variant: variant || (kind === 'stop' ? 'outline' : 'secondary')
+      title,
+      variant: 'ghost',
+      style: {
+        background: (quiet && !hover) ? 'transparent' : tint(color, quiet ? 14 : hover ? 26 : 14),
+        boxShadow: quiet && !hover ? 'none' : 'inset 0 0 0 1px ' + tint(color, hover ? 70 : 45),
+        color: 'color-mix(in srgb, ' + color + ' 60%, ' + T.primary + ')'
+      }
     },
-    label || (spec ? spec.label : kind)
+    label
   )
+}
+
+function ActionButton({ kind, label, target, resource, deployment, params, rights, quiet }) {
+  const spec = rights.specs.get(kind)
+  const tone = ACTION_TONE[kind]
+  const text = label || (spec ? spec.label : kind)
+  const title = spec && spec.note ? spec.note : undefined
+  const onClick = () => requestAction(kind, target, { params, resourceName: resource && resource.name, resourceUuid: resource && resource.uuid, deployment })
+  if (tone) return el(ToneButton, { label: text, onClick, quiet, title, tone })
+  return el(Button, { onClick, size: 'xs', title, variant: 'secondary' }, text)
 }
 
 function PlanLine({ name, value }) {
@@ -1403,7 +1438,37 @@ function ConnectionWidget({ widget, watching }) {
 // snap.attention, snap.summary and snap.fleet; nothing counts on its own.
 
 const $focus = atom(null) // the attention signal the summary chips filter the Apps list by
-const $openApp = atom(null) // { uuid, at }: the app row whose history is open (Diagnose, follow-through)
+const $openApp = atom(null) // { uuid, at, link? }: the app row whose history is open (Diagnose, follow-through, a link)
+
+// A link opens one app's row: #/coolifybruecke?app=<uuid> (WPBrücke's site card links here).
+const APP_LINK_RE = /^[A-Za-z0-9]{1,64}$/
+let linkScrolled = null // the $openApp value of the last link-opened row scrolled into view
+
+function linkedApp(hash) {
+  const raw = String(hash || '').replace(/^#/, '')
+  const q = raw.indexOf('?')
+  if ((q >= 0 ? raw.slice(0, q) : raw) !== PATH) return null
+  const uuid = new URLSearchParams(q >= 0 ? raw.slice(q + 1) : '').get('app')
+  return uuid && APP_LINK_RE.test(uuid) ? uuid : null
+}
+
+const currentHash = () => (window.location && window.location.hash) || ''
+
+// Keyed on the hash value, so a poll re-render never opens a row again after the user closed it.
+function useAppLink() {
+  const [hash, setHash] = useState(currentHash)
+  useEffect(() => {
+    const on = () => setHash(currentHash())
+    window.addEventListener('hashchange', on)
+    return () => window.removeEventListener('hashchange', on)
+  }, [])
+  useEffect(() => {
+    const uuid = linkedApp(hash)
+    if (!uuid) return
+    $focus.set(null)
+    $openApp.set({ uuid, at: Date.now(), link: true })
+  }, [hash])
+}
 
 function signalCount(data, signal) {
   const row = ((data && data.summary) || []).find(s => s.signal === signal)
@@ -1491,19 +1556,15 @@ function SummaryWidget({ widget }) {
     focus ? el(Button, { onClick: () => $focus.set(null), size: 'xs', variant: 'ghost' }, 'Show all') : null,
     el('span', { style: { flex: 1 } }),
     props.redeploy_changed !== false && redeployable.length
-      ? el(
-          Button,
-          {
-            onClick: () =>
-              requestAction('deploy', redeployable[0].uuid, {
-                bulk: redeployable.map(r => ({ uuid: r.uuid, name: r.name, environment: r.environment })),
-                resourceName: redeployable.length + (redeployable.length === 1 ? ' app' : ' apps') + ' with changed env'
-              }),
-            size: 'xs',
-            variant: 'secondary'
-          },
-          'Redeploy ' + redeployable.length + (redeployable.length === 1 ? ' app' : ' apps') + ' with changed env'
-        )
+      ? el(ToneButton, {
+          label: 'Redeploy ' + redeployable.length + (redeployable.length === 1 ? ' app' : ' apps') + ' with changed env',
+          onClick: () =>
+            requestAction('deploy', redeployable[0].uuid, {
+              bulk: redeployable.map(r => ({ uuid: r.uuid, name: r.name, environment: r.environment })),
+              resourceName: redeployable.length + (redeployable.length === 1 ? ' app' : ' apps') + ' with changed env'
+            }),
+          tone: 'accent'
+        })
       : null
   )
 }
@@ -1525,8 +1586,7 @@ function RollbackButton({ resource, row, rights }) {
     params: { commit: good.commit },
     resource,
     rights,
-    target: resource.uuid,
-    variant: 'secondary'
+    target: resource.uuid
   })
 }
 
@@ -1551,7 +1611,7 @@ function LatestRow({ d, rights, fleet, open, onDiagnose }) {
       d.trigger ? el(Small, {}, d.trigger) : null,
       d.finished_at ? el(Small, { style: S.mono }, duration(d.created_at, d.finished_at)) : null,
       el(Small, { style: { ...S.mono, minWidth: 64, textAlign: 'right' } }, ago(d.created_at)),
-      canCancel ? el(ActionButton, { kind: 'cancel', target: d.uuid, resource: r, deployment: d.uuid, rights, label: 'Cancel', variant: 'outline' }) : null,
+      canCancel ? el(ActionButton, { kind: 'cancel', target: d.uuid, resource: r, deployment: d.uuid, rights, label: 'Cancel' }) : null,
       failedNow ? el(RollbackButton, { resource: r, row, rights }) : null,
       failedNow ? el(Button, { 'aria-expanded': open, onClick: onDiagnose, size: 'xs', variant: open ? 'default' : 'secondary' }, el(Codicon, { name: 'debug', size: '0.75rem' }), 'Diagnose') : null,
       d.url ? el(ExternalLink, { href: d.url }, el(Codicon, { name: 'link-external', size: '0.7rem' })) : null
@@ -1656,6 +1716,13 @@ function SignalBadges({ items }) {
 function AppRow({ resource, row, items, rowActions, rights, locked, showEnvKeys }) {
   const open = useValue($openApp)
   const isOpen = Boolean(open && open.uuid === resource.uuid)
+  const ref = useRef(null)
+  useEffect(() => {
+    // Once per link: a second widget showing the same app, or a later re-mount, does not scroll.
+    if (!isOpen || !open.link || open === linkScrolled || !ref.current) return
+    linkScrolled = open
+    if (typeof ref.current.scrollIntoView === 'function') ref.current.scrollIntoView({ block: 'center' })
+  }, [isOpen, open])
   const failing = row && row.state === 'failing'
   const running = row && row.state === 'deploying'
   const stateClass = statusClass(resource.status)
@@ -1671,7 +1738,7 @@ function AppRow({ resource, row, items, rowActions, rights, locked, showEnvKeys 
   const deployed = row && row.last_good // what runs: the last finished deploy (none known: no commit shown)
   return el(
     'div',
-    { 'data-cc-app': resource.uuid, style: { ...S.col(6), padding: '6px 0', ...S.hair } },
+    { 'data-cc-app': resource.uuid, ref, style: { ...S.col(6), padding: '6px 0', ...S.hair } },
     el(
       'div',
       { style: { ...S.row(8), flexWrap: 'wrap' } },
@@ -1733,7 +1800,7 @@ function PairLine({ apps, fleet, rights, caps }) {
         i ? el(Codicon, { name: 'arrow-right', size: '0.7rem', style: { color: T.tertiary } }) : null,
         el(StatusDot, { tone: row.state === 'failing' ? 'bad' : row.state === 'deploying' ? 'warn' : resourceTone(r.status) }),
         el(Small, {}, r.environment + ' ' + (d && d.commit && d.commit !== 'HEAD' ? shortSha(d.commit) : '?') + (d ? ' ' + ago(d.finished_at || d.created_at) : '')),
-        rights.allows('deploy', r) ? el(ActionButton, { kind: 'deploy', target: r.uuid, resource: r, rights, variant: 'ghost' }) : null
+        rights.allows('deploy', r) ? el(ActionButton, { kind: 'deploy', target: r.uuid, resource: r, rights, quiet: true }) : null
       )
     })
   )
@@ -2017,7 +2084,7 @@ function QuickActionsWidget({ widget }) {
         r ? el(StatusDot, { tone: resourceTone(r.status), title: r.status }) : el(StatusDot, { tone: 'muted' }),
         el('div', { style: { ...S.col(0), flex: 1 } }, el('span', { style: { ...S.strong, ...S.ellipsis } }, label), el(Small, { style: S.ellipsis }, r ? r.project + ' / ' + r.environment + ' · ' + r.status : snap.isLoading ? 'loading' : 'not in the snapshot: ' + button.target)),
         allowed || (!r && !snap.isLoading)
-          ? el(ActionButton, { kind: button.kind, target: r ? r.uuid : button.target, resource: r || { name: button.target }, params: button.params, rights, label: spec ? spec.label : button.kind, variant: 'default' })
+          ? el(ActionButton, { kind: button.kind, target: r ? r.uuid : button.target, resource: r || { name: button.target }, params: button.params, rights, label: spec ? spec.label : button.kind })
           : el(Small, {}, rights.loaded ? 'outside the API token' : '')
       )
     })
@@ -2593,6 +2660,7 @@ function CockpitPage() {
   const gridRef = useRef(null)
   const width = useWidth(gridRef)
   const columns = width >= 1040 ? 12 : width >= 640 ? 6 : 1
+  useAppLink()
 
   // An agent edit while the page is open shows on the next layout poll; say so once.
   const lastVersion = useRef(null)

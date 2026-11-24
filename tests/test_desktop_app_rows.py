@@ -3,7 +3,7 @@
 desktop_page_harness.mjs stands in for react, react/jsx-runtime and @hermes/plugin-sdk.
 desktop_app_rows.mjs mounts the cockpit page against fixed route answers and asserts which buttons
 each measured status class shows (milestone SS-1; the vocabulary comes from the SS-0 measurement on
-the live instance). Each case runs in its own node process, because the page keeps module state.
+the live instance), and that an app link (#/coolifybruecke?app=<uuid>) opens its row. Each case runs in its own node process, because the page keeps module state.
 """
 
 from __future__ import annotations
@@ -29,6 +29,11 @@ CASES = {
     "live_state_stopped": "against the real measured state, the stopped staging row shows Start and no Stop",
     "live_state_running": "against the real measured state, the running staging row shows Stop and no Start",
     "tones": "a stopped row's dot shows stopped, an unhealthy running row's a warning",
+    "link_opens_row": "#/coolifybruecke?app=<uuid> opens that row with its history and scrolls to it once",
+    "link_clears_focus": "a link arriving while the page is open clears the attention filter that hid the row",
+    "link_invalid_ignored": "an app value outside the uuid pattern, another path or an empty value opens nothing",
+    "link_not_reopened_on_poll": "a closed linked row stays closed through polls; following the link again reopens it",
+    "action_tones": "each row action wears its kind's colour, in its style too",
 }
 
 
