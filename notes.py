@@ -1,8 +1,8 @@
-"""The instance notebook `COOLIFY.md`, and the cockpit's own entries for changes it observes.
+"""The instance notebook `COOLIFY.md`, and Coolifybrücke's own entries for changes it observes.
 
 The notebook holds what neither Hermes memory nor a skill holds: facts about this one Coolify
 instance ("app X needs NPM_TOKEN as a build variable", "upgraded 4.6.0 -> 4.7.0"). Three authors
-write it: the user (the cockpit's widget), the agent (`coolify_notes append`) and the cockpit itself
+write it: the user (Coolifybrücke's widget), the agent (`coolify_notes append`) and Coolifybrücke itself
 when it observes a change (`observe`). It is read on demand (`coolify_notes read`, `@coolify:notes`)
 and never injected into every turn.
 
@@ -47,7 +47,7 @@ NOTES_FILE = "COOLIFY.md"
 STATE_FILE = "observed-state.json"
 LOCK_FILE = ".COOLIFY.md.lock"
 
-AUTHORS = ("you", "agent", "cockpit")
+AUTHORS = ("you", "agent", "coolifybruecke")  # older entries say "cockpit"; they still read
 MAX_ENTRY_CHARS = 4000
 MAX_FILE_BYTES = 1_000_000
 READ_DEFAULT_CHARS = 6000
@@ -55,8 +55,8 @@ READ_MAX_CHARS = 40_000
 
 TITLE = (
     "# COOLIFY.md\n\n"
-    "Notes about this Coolify instance, written by you (the cockpit's notebook widget), the agent "
-    "(`coolify_notes append`) and the cockpit itself when it sees a change (version, servers, token "
+    "Notes about this Coolify instance, written by you (Coolifybrücke's notebook widget), the agent "
+    "(`coolify_notes append`) and Coolifybrücke itself when it sees a change (version, servers, token "
     "rights). Hermes reads it only on demand (`coolify_notes read`, `@coolify:notes`). Newest entry "
     "last.\n"
 )
@@ -120,7 +120,7 @@ def _atomic_write(path: Path, text: str) -> None:
 @dataclass
 class Entry:
     when: str      # "2026-11-08 14:03"
-    author: str    # you | agent | cockpit
+    author: str    # you | agent | coolifybruecke (older entries: cockpit)
     topic: str     # "" or a short label (version, server, token)
     text: str
     masked: int = 0
@@ -344,7 +344,7 @@ def observe(data_dir: Optional[Path], obs: Observation, *, clock: Clock = _utcno
         found, new_state = changes(previous or {}, obs)
         new_state["seen_at"] = clock().astimezone(_dt.timezone.utc).replace(microsecond=0).isoformat()
         stamp = clock().astimezone(_dt.timezone.utc).strftime("%Y-%m-%d %H:%M")
-        entries = [Entry(stamp, "cockpit", topic, text) for topic, text in found]  # own text: no secrets
+        entries = [Entry(stamp, "coolifybruecke", topic, text) for topic, text in found]  # own text: no secrets
         if entries:
             book._write_entries(entries)
         stored["instances"][obs.instance_key] = new_state

@@ -1,7 +1,7 @@
 """A 403 that Coolify's rights check never wrote is not a missing right.
 
 Measured on a real setup: a reverse proxy with an IP allow-list in front of Coolify answered every
-request, `/api/health` included, with `403` and the plain-text body `Forbidden`. The cockpit read
+request, `/api/health` included, with `403` and the plain-text body `Forbidden`. Coolifybrücke read
 each of those as "the token lacks this right" and told the user to give the token `read`, which
 was already there. Coolify itself refuses the same way before any token check when its API is
 switched off or the caller is outside its allowed IPs (app/Http/Middleware/ApiAllowed.php,

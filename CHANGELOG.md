@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.3.0
+
+Update both halves: the plugin where Hermes runs and the one Hermes Desktop loads.
+
+- **Breaking:** the agent tool `coolify_cockpit` is gone, with no alias. Prompts, skills and
+  scheduled jobs that name it get "unknown tool" until they say `coolify_layout`.
+- **Breaking, for Coolify Cockpit 0.1.0 only:** the plugin no longer copies 0.1.0's layout and
+  notebook from `plugin-data/coolify-cockpit/` on first use. Anyone still on 0.1.0 copies the two
+  files once by hand (README, "Upgrading from Coolify Cockpit 0.1.0").
+- Which server each app runs on. Every application, service and database in the snapshot carries
+  the name of its server (taken from Coolify's own resource lists, so no extra request).
+- `coolify_overview server=app-1` answers "which apps run on app-1?" in one call: right after
+  NEEDS YOU comes the complete list of that server's resources, one line per project and
+  environment. A name, a uuid or a part of a name that fits one server works; a part that fits
+  several, or no server, names the servers and filters nothing. NEEDS YOU, the servers and the
+  deploy sections narrow to that server too. Resources whose server Coolify did not name are left
+  out with a count and the reason.
+- With more than one server, the overview's project groups end with `@ <server>`, and
+  `@coolify:server/<name>` says how many resources run there and lists them.
+  `@coolify:<resource>` names its server.
+- The Apps widget names the server on each row and gets a server switch next to the environment
+  switch, both only when there is more than one server. A new `server` setting pins a widget to
+  one server (in the Edit view, and through `coolify_layout`).
+- Each Servers card says how many resources run on that server.
+- "Cockpit" is gone from the plugin's wording: the page, the chat tab ("Coolifybrücke"), the chat
+  widget ("Coolifybrücke chat"), the status-bar chip, the settings, the tool descriptions, the
+  bundled skill and the docs all say Coolifybrücke. The tagline is "Coolifybrücke · for Coolify".
+- The agent tool `coolify_cockpit` is now `coolify_layout`: same operations, same `layout.json`.
+- Entries the plugin writes into `COOLIFY.md` itself are signed `coolifybruecke`. Older entries
+  signed `cockpit` stay as they are and still read.
+
 ## 0.2.8
 
 Update both halves: the plugin where Hermes runs and the one Hermes Desktop loads.

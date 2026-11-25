@@ -554,7 +554,7 @@ WHY_NO_LOGS = ("Coolify returns a deployment's build log only to tokens with `re
                "The recommended setup leaves it off and diagnoses pasted logs.")
 
 
-STOP_HINT = ("Stop investigating here. Without the build log, the cockpit's facts about a failed deployment "
+STOP_HINT = ("Stop investigating here. Without the build log, Coolifybrücke's facts about a failed deployment "
              "are its status, timing, server and commit (coolify_deployments); more history, overview or "
              "detail calls will not reveal the cause. Answer with those facts, say the cause is in the build "
              "log, and ask the user to paste it.")

@@ -53,7 +53,7 @@ def test_single_scoped_token_names_server_stats_and_partial_view(kit):
     assert out["routing"]["actions"] == "single"
 
 
-def test_single_teamwide_read_token_is_a_read_only_cockpit(kit):
+def test_single_teamwide_read_token_is_read_only(kit):
     out, _ = kit.report(read="teamwide_read")
     assert ids(out["available"]) == without("actions", "live_logs")
     gone = missing(out)

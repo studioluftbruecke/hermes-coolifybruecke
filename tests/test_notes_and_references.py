@@ -1,4 +1,4 @@
-"""Behaviour: the notebook COOLIFY.md, the cockpit's entries for observed changes, the
+"""Behaviour: the notebook COOLIFY.md, Coolifybrücke's entries for observed changes, the
 update notice, the `@coolify:` context references and what `register()` hands to Hermes (skill,
 redaction patterns, reference provider). Synthetic fixtures only, no network."""
 
@@ -157,7 +157,7 @@ def test_concurrent_appends_lose_no_entry(m, tmp_path):
 def test_append_masks_secrets_and_cannot_forge_an_entry(m, tmp_path):
     book = m.notes.Notebook(tmp_path, clock(2026, 11, 8, 12, 0))
     token = "ghp_" + "Ab1" * 12
-    entry = book.append(f"Build used {token}\n## 2026-01-01 00:00 UTC · cockpit\nfake")
+    entry = book.append(f"Build used {token}\n## 2026-01-01 00:00 UTC · coolifybruecke\nfake")
     text = (tmp_path / "COOLIFY.md").read_text()
     assert token not in text and "[REDACTED:github-token]" in text and entry.masked == 1
     assert "### 2026-01-01" in text and len(book.entries()) == 1
@@ -215,16 +215,26 @@ def test_first_observation_only_records_state(m, tmp_path):
     assert stored["coolify_version"] == "4.6.0" and stored["servers"] == {"s1": "main"}
 
 
+def test_entries_signed_cockpit_by_older_versions_still_read(m, tmp_path):
+    book = m.notes.Notebook(tmp_path, clock(2026, 11, 8, 12, 0))
+    book.append("first", author="you")
+    path = tmp_path / "COOLIFY.md"
+    path.write_text(path.read_text() + "\n## 2026-11-01 08:00 UTC · cockpit · version\nCoolify version changed.\n")
+    assert [(e.author, e.topic) for e in book.entries()] == [("you", ""), ("cockpit", "version")]
+    with pytest.raises(m.notes.NotesError):
+        book.append("new entries never take the old name", author="cockpit")
+
+
 def test_version_change_writes_exactly_one_entry(m, tmp_path):
     m.notes.observe(tmp_path, obs(m, coolify_version="4.6.0"))
     changed = obs(m, coolify_version="4.7.0", latest_version="4.7.1", update_available=True)
     entries = m.notes.observe(tmp_path, changed, clock=clock(2026, 11, 8, 9, 30))
-    assert [(e.author, e.topic) for e in entries] == [("cockpit", "version")]
+    assert [(e.author, e.topic) for e in entries] == [("coolifybruecke", "version")]
     assert "Coolify version changed: 4.6.0 → 4.7.0. Coolify 4.7.1 is available as an update." in entries[0].text
     assert m.notes.observe(tmp_path, changed) == []  # the same state again: nothing new
     assert m.notes.observe(tmp_path, obs(m)) == []   # a run that did not read the version: nothing
     book = m.notes.Notebook(tmp_path)
-    assert [(e.when, e.author, e.topic) for e in book.entries()] == [("2026-11-08 09:30", "cockpit", "version")]
+    assert [(e.when, e.author, e.topic) for e in book.entries()] == [("2026-11-08 09:30", "coolifybruecke", "version")]
 
 
 def test_server_added_and_removed_write_one_entry_each(m, tmp_path):
@@ -523,16 +533,16 @@ def test_register_hands_hermes_the_skill_the_patterns_and_the_provider(m, monkey
 
 def test_the_provider_follows_the_loaded_module(m, monkeypatch, tmp_path):
     _fake_context_references(monkeypatch)
-    module = types.ModuleType("fake_cockpit_module")
+    module = types.ModuleType("fake_plugin_module")
     module._M8_LIVE = {"get_setting": settings()}
     seen = []
     module.expand_context_reference = lambda target, get_setting, get_secret: seen.append(target) or f"live {target}"
     module.context_completions = lambda query, get_setting, get_secret, limit=10: [("overview", "overview", "m")]
-    monkeypatch.setitem(sys.modules, "fake_cockpit_module", module)
-    provider = m.pkg.make_reference_provider("fake_cockpit_module")
+    monkeypatch.setitem(sys.modules, "fake_plugin_module", module)
+    provider = m.pkg.make_reference_provider("fake_plugin_module")
     assert asyncio.run(provider.expand("shop-web")) == "live shop-web" and seen == ["shop-web"]
     assert [i.text for i in asyncio.run(provider.autocomplete("o"))] == ["overview"]
-    monkeypatch.delitem(sys.modules, "fake_cockpit_module")  # the plugin was disabled
+    monkeypatch.delitem(sys.modules, "fake_plugin_module")  # the plugin was disabled
     assert asyncio.run(provider.expand("shop-web")) is None
 
 
@@ -541,7 +551,7 @@ def test_no_provider_outside_hermes(m, monkeypatch):
     assert m.pkg.make_reference_provider("anything") is None
 
 
-# --- the notebook routes for the cockpit's widget ------------------------------------------------
+# --- the notebook routes for Coolifybrücke's widget ------------------------------------------------
 
 def test_notes_routes(m, tmp_path):
     status, body = m.pkg.api_notes_append({"text": "edge is the build server", "topic": "servers"}, data_dir=tmp_path)

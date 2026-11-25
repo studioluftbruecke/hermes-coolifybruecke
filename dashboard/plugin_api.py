@@ -11,7 +11,7 @@
     GET /resources/{uuid}/deployments     deployment history of one application (?take=N, max 50)
     GET /actions                          the ActionSpec registry and whether the API token holds deploy
     POST /actions                         {kind, target, params?, dry_run?}: one lifecycle action
-    GET /layout[?availability=true]       the cockpit layout, widget types and presets (+ per-widget availability)
+    GET /layout[?availability=true]       the Coolifybrücke layout, widget types and presets (+ per-widget availability)
     PUT /layout                           {expected_version, layout}: save the pane's layout (compare-and-set)
     POST /layout/preset                   {preset, params?, placement?, expected_version?}: apply a preset
     GET /notes[?max_chars=N]              the instance notebook COOLIFY.md (newest entries kept)
@@ -28,7 +28,7 @@ same rights and view checks the agent's tool runs.
 Coolify's API rate limit (200 requests per minute per Coolify user by default) answers 429
 `{"error": "rate_limited", "retry_after_s": N}` on every route that reads Coolify.
 The layout routes never call Coolify (except `?availability=true`, the shared capabilities check); they
-edit `layout.json` in the plugin data dir, the same file the agent's `coolify_cockpit` edits. A save
+edit `layout.json` in the plugin data dir, the same file the agent's `coolify_layout` edits. A save
 based on an older version answers 409 with the current layout.
 """
 

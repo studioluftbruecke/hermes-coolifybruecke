@@ -1,7 +1,7 @@
-"""The cockpit layout: `Layout`, `Widget`, the `WidgetType` registry, presets, validation, storage.
+"""The Coolifybrücke layout: `Layout`, `Widget`, the `WidgetType` registry, presets, validation, storage.
 
 Customization: presets, then edit mode, then the agent, all on one layout.
-The Desktop page and the agent's `coolify_cockpit` tool edit the same file, `layout.json` in the
+The Desktop page and the agent's `coolify_layout` tool edit the same file, `layout.json` in the
 plugin's data directory, so everything here is data the page renders, never code.
 
     Layout     { schema: 1, version, preset, widgets: [Widget], updated_at, updated_by }
@@ -271,9 +271,11 @@ WIDGET_TYPES: tuple[WidgetType, ...] = (
         "resources", "Apps",
         "Applications of every environment, grouped by environment, with filter chips, deployed commit and "
         "its age, signal badges, Deploy, Restart, Stop and Start; services and databases in a second group. "
-        "A protected environment shows a lock. Apps of one repository in two environments show as a pipeline pair.",
+        "A protected environment shows a lock. Apps of one repository in two environments show as a pipeline pair. "
+        "With more than one server, each row names its server and the toolbar gets a server switch.",
         ("snapshot.resources", "snapshot.fleet", "actions"), "resources",
         {"project": _project(), "environment": _environment(),
+         "server": Prop("string", "Only resources on this server (its exact name, any case); empty: all."),
          "kinds": Prop("list", "Only these kinds; empty: all.",
                        item=Prop("enum", "Resource kind.", choices=RESOURCE_KINDS), max_items=3),
          "name_contains": Prop("string", "Only resources whose name contains this."),
@@ -313,7 +315,7 @@ WIDGET_TYPES: tuple[WidgetType, ...] = (
          "editable": Prop("bool", "Allow editing in the widget.", True)},
         default_size="m"),
     WidgetType(
-        "chat", "Cockpit chat",
+        "chat", "Coolifybrücke chat",
         "Ask about what you are looking at; the selection rides along as @coolify: context. Runs as a normal "
         "Hermes chat on your provider.",
         ("session",), None,

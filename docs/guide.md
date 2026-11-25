@@ -10,9 +10,9 @@ The [README](../README.md) has the short version and every disclosure.
 
 1. In Coolify, open **Settings → Advanced**. In the **API and MCP** section, set **API access** to
    **Enabled**. With API access off, Coolify answers every token request with `403 Forbidden`.
-2. In the same section, set **MCP server** to **Enabled**. The cockpit reads server stats, the
+2. In the same section, set **MCP server** to **Enabled**. Coolifybrücke reads server stats, the
    failing apps and the latest deploys through it. MCP must also be on for the token's team
-   (**Team → General**, on by default). Without MCP the cockpit still works: it has no server
+   (**Team → General**, on by default). Without MCP Coolifybrücke still works: it has no server
    stats, it reads each app's history every 5 minutes instead of the two lists, and it says so.
 3. If **Allowed API IPs** lists any address, add the public IP address of the machine that runs
    the Hermes backend (not your laptop, when Hermes Desktop connects to a remote backend). The list
@@ -30,7 +30,7 @@ Two optional tokens exist for the cases that need them:
 
 | Token | When | Rights | Plugin setting |
 | --- | --- | --- | --- |
-| Read-only token | Only when your API token is limited to some projects. A limited token cannot read servers and sees nothing outside its projects. A team-wide read token shows servers and every app, and the cockpit never acts with it | `read`, team-wide | `COOLIFYBRUECKE_READ_TOKEN` |
+| Read-only token | Only when your API token is limited to some projects. A limited token cannot read servers and sees nothing outside its projects. A team-wide read token shows servers and every app, and Coolifybrücke never acts with it | `read`, team-wide | `COOLIFYBRUECKE_READ_TOKEN` |
 | Git host token | Only for "branch ahead" on private repositories when Forgebrücke is not installed (see [Branch ahead](#branch-ahead)) | Read-only repository access on your git host | `COOLIFYBRUECKE_GIT_TOKEN`, with the setting `git_host` |
 
 Coming from Coolify Cockpit 0.1.0, whose settings had other names? Enter the URL and tokens again
@@ -39,7 +39,7 @@ in the README lists what moves on its own.
 
 Leave `read:sensitive` off the Coolify tokens. It lets a token read deployment logs and secret
 values such as environment variables, and anything the tools read can reach your model provider.
-Without it, paste a failed log into the chat for a diagnosis. The cockpit never uses `write` or
+Without it, paste a failed log into the chat for a diagnosis. Coolifybrücke never uses `write` or
 `delete`, so no token needs them.
 
 ### Configure the plugin
@@ -56,7 +56,7 @@ After the token is saved, one result line takes the place of the explanation, fo
 read, deploy · no servers" and a button **Add a read-only token**. A token that holds `write` or
 `delete` gets an amber chip "can change and delete".
 
-**Check again** sits under that line on the settings page, and in the setup steps while the cockpit
+**Check again** sits under that line on the settings page, and in the setup steps while Coolifybrücke
 is not set up yet. One
 click reads the settings again (a token you just saved included), runs the connection and rights
 check anew, and shows the result and when it ran. Use it after you change something outside Hermes,
@@ -88,9 +88,9 @@ Any setup works: one token or two, limited or team-wide, read-only or full acces
 | Recommended: one team-wide `read` + `deploy` API token | Everything except live logs | Live logs need `read:sensitive`; paste failed logs instead. It warns that the token can deploy, restart and stop every resource |
 | A limited `read` + `deploy` API token and a team-wide `read` read-only token | Everything except live logs; actions only inside the API token's projects | Live logs, as above |
 | One limited `read` + `deploy` token | Resources, deployments and actions inside its projects | No server stats (a limited token cannot read servers); only the projects in its scope are visible |
-| One team-wide `read` token | Read-only cockpit with server stats | No actions (no `deploy`), no live logs |
+| One team-wide `read` token | Read-only Coolifybrücke with server stats | No actions (no `deploy`), no live logs |
 | One team-wide `read`, `read:sensitive`, `deploy` token | Everything | Nothing; it warns that it can stop production and that logs can reach the model |
-| A token with `write` or `delete` | Whatever its other rights unlock | The cockpit never uses `write` or `delete` and warns that the token holds them |
+| A token with `write` or `delete` | Whatever its other rights unlock | Coolifybrücke never uses `write` or `delete` and warns that the token holds them |
 
 Reads use the token with the widest view. Actions use only the API token (or your only token),
 never the read-only token, even if the read-only token could.
@@ -134,7 +134,7 @@ In a new session, `hermes plugins list` shows `coolifybruecke` as enabled, and
 
 ## What needs you: the attention list
 
-Every count the cockpit shows comes from one list. The summary row, the status-bar chip, the app
+Every count Coolifybrücke shows comes from one list. The summary row, the status-bar chip, the app
 badges, `coolify_overview`, `@coolify:overview` and the alert job all read it. Each entry comes
 from one signal:
 
@@ -162,11 +162,11 @@ shape of a backup run could not be read.
 
 ### Branch ahead
 
-Coolify does not know a branch's head: every application stores `git_commit_sha: HEAD`. The
-cockpit asks the git host, through the first source that can answer, in this order:
+Coolify does not know a branch's head: every application stores `git_commit_sha: HEAD`.
+Coolifybrücke asks the git host, through the first source that can answer, in this order:
 
 1. **Forgebrücke**, when it is enabled in the same profile and the repository is on its Forgejo
-   host. The cockpit calls Forgebrücke's `forgejo_get` (`kind=branch`) in-process, and Forgebrücke
+   host. Coolifybrücke calls Forgebrücke's `forgejo_get` (`kind=branch`) in-process, and Forgebrücke
    uses its own token. Only the alert tick and the agent's tool calls can make that call; the page
    reads the answers they stored. Forgebrücke returns the head only, so these apps show "ahead"
    without a count.
@@ -219,7 +219,7 @@ What a run prints:
 
 **From a chat.** The Alerts card in **Settings → Plugins → Coolifybrücke** shows whether the job is
 on, and its button **Ask Hermes to turn on** (or **Ask Hermes to turn off**) drafts the request into
-the Cockpit chat; nothing is sent until you press send. The agent then runs the command, or, for
+the Coolifybrücke chat; nothing is sent until you press send. The agent then runs the command, or, for
 alerts in that chat, creates the same job with its cron tool (`no_agent`, script
 `coolifybruecke-alerts.py`, deliver `origin`) after `alerts on` wrote the script. Delivery
 `origin` from a Desktop chat writes a note into that chat. A push to your phone with Desktop closed
@@ -240,11 +240,11 @@ The tools form the toolset `coolifybruecke`. Name it to limit a run to them
 | Tool | What it does |
 | --- | --- |
 | `coolify_capabilities` | Instance version and available update, each token's rights and scope and what it sees, the features your setup unlocks and those it does not (with the reason and what would unlock them), the protected environments, warnings |
-| `coolify_overview` | One compact snapshot. It opens with "NEEDS YOU", the attention list worst first, each item with its fix. Then servers with current CPU, RAM, disk, load and network; deployments running now; the latest 8 finished or failed deploys of every environment, with trigger and whether a later deploy fixed a failure; every application, service and database with project, environment, status and domain. Filters by project or environment. Cached for 10 seconds |
+| `coolify_overview` | One compact snapshot. It opens with "NEEDS YOU", the attention list worst first, each item with its fix. Then servers with current CPU, RAM, disk, load and network; deployments running now; the latest 8 finished or failed deploys of every environment, with trigger and whether a later deploy fixed a failure; every application, service and database with project, environment, status and domain. Filters by project, environment or server (`server=app-1`: its name, uuid, or a part of the name that fits one server); with a server filter the answer lists every resource on that server right after NEEDS YOU. Cached for 10 seconds |
 | `coolify_deployments` | Deployment history of one application (by name or id), or the details of one deployment. Never includes build logs |
 | `coolify_diagnose` | A failed deployment's log, pasted by you or fetched by deployment UUID (needs `read:sensitive`), classified against a catalogue of common self-hosting failures: the class, a confidence, the evidence line numbers, a likely fix and the relevant log lines |
 | `coolify_action` | One lifecycle action: `deploy`, `force_deploy`, `restart`, `start`, `stop`, `cancel` (a queued or running deployment) or `rollback` (needs `params.commit`). Returns Coolify's answer and the deployment id where Coolify creates one |
-| `coolify_cockpit` | Reads and rearranges the cockpit page: `get`, `add_widget`, `remove_widget`, `update_widget`, `move_widget`, `apply_preset`. It edits only the layout; it never runs a Coolify action |
+| `coolify_layout` | Reads and rearranges the Coolifybrücke page: `get`, `add_widget`, `remove_widget`, `update_widget`, `move_widget`, `apply_preset`. It edits only the layout; it never runs a Coolify action |
 | `coolify_notes` | Read the instance notebook `COOLIFY.md` (newest entries first within a size cap) or append one dated entry |
 
 The diagnosis catalogue covers: the build running out of memory, a build variable that was empty
@@ -271,7 +271,7 @@ to Coolify; the read tools keep working there. If you run plugins in a separate 
 run, so it also refuses agent actions from the CLI there; Desktop, the TUI and chat platforms
 still ask. On a Hermes release that no longer tells plugins whether a turn is a one-shot run, the
 plugin refuses every agent action and says so, until an update of the plugin reads the new signal;
-the cockpit's own buttons keep working. If you switch Hermes' approvals off or turn on
+Coolifybrücke's own buttons keep working. If you switch Hermes' approvals off or turn on
 `/yolo`, Hermes approves without asking, as it does for every other gated tool.
 
 Where the turn runs decides who can approve:
@@ -290,17 +290,17 @@ The environments in `protected_environments` (default `production`) are off limi
 
 | Who acts | Switch "Agent may act on protected environments" off (default) | Switch on |
 | --- | --- | --- |
-| The agent (`coolify_action`) | Refused without a request to Coolify. The answer names the environment and says that you can use the cockpit's button or switch the setting on | Asks every time. The prompt starts with "PROTECTED ENVIRONMENT" and the environment's name, and an "always" or "for this session" answer does not carry over to the next call |
+| The agent (`coolify_action`) | Refused without a request to Coolify. The answer names the environment and says that you can use Coolifybrücke's button or switch the setting on | Asks every time. The prompt starts with "PROTECTED ENVIRONMENT" and the environment's name, and an "always" or "for this session" answer does not carry over to the next call |
 | You (the page's buttons) | Works, with a confirm that names the environment | Same |
 
-An environment the cockpit cannot determine counts as protected. A chat message alone does not lift
-the refusal, because the plugin cannot verify who wrote it. Protected environments guard the
-cockpit's tool, not the token: anything else that runs as Hermes on the host can still read the
+An environment Coolifybrücke cannot determine counts as protected. A chat message alone does not lift
+the refusal, because the plugin cannot verify who wrote it. Protected environments guard
+Coolifybrücke's tool, not the token: anything else that runs as Hermes on the host can still read the
 token from the profile.
 
-### Arranging the cockpit
+### Arranging the Coolifybrücke page
 
-The cockpit is a list of widgets, top to bottom, each with a size (`s`, `m`, `l`) and its own
+The page is a list of widgets, top to bottom, each with a size (`s`, `m`, `l`) and its own
 settings. Start from a preset, change it in the page, or ask Hermes ("put a Deploy desk for staging
 at the top with a restart button for my-app-staging"); the page and the agent edit the same layout.
 
@@ -308,8 +308,8 @@ at the top with a restart button for my-app-staging"); the page and the agent ed
 | --- | --- | --- |
 | `summary` | What needs you: one chip per signal with its count; a click filters the Apps list. One green line ("28 apps healthy, last deploy 12 min ago") when nothing does. Offers "Redeploy N apps with changed env" | `read` |
 | `deployments` | Latest deploys of every environment, successes included, newest first: status, app, environment, commit message, trigger, age, duration. A failed row offers **Diagnose** (the card opens in place) and **Roll back** to the last good deploy; a failure that a later success replaced is dimmed | `read` |
-| `resources` | Apps of every environment, grouped by environment, with filter chips, deployed commit and its age, signal badges, **Deploy** and **Restart**; services and databases in a second group. A protected environment shows a lock. Apps of one repository in two environments show as a pipeline pair | `read` |
-| `servers` | One card per server: CPU, RAM, disk, load and network (in and out), each a value over an area chart, with deploy ticks, hover, peak and a disk estimate; one range switch (1 h, 6 h, 24 h, 7 d) for all servers | a team-wide `read` token (stats: MCP and Sentinel metrics on) |
+| `resources` | Apps of every environment, grouped by environment, with filter chips, deployed commit and its age, signal badges, **Deploy** and **Restart**; services and databases in a second group. A protected environment shows a lock. Apps of one repository in two environments show as a pipeline pair. With more than one server, each row names its server and a server switch (**All servers** and each name) sits next to the environment switch; the `server` setting pins the widget to one server | `read` |
+| `servers` | One card per server: how many resources run on it, then CPU, RAM, disk, load and network (in and out), each a value over an area chart, with deploy ticks, hover, peak and a disk estimate; one range switch (1 h, 6 h, 24 h, 7 d) for all servers | a team-wide `read` token (stats: MCP and Sentinel metrics on) |
 | `quick_actions` | Pinned buttons, each one action on one resource | the API token's `deploy` |
 | `notebook` | Your instance notebook | nothing |
 | `chat` | Ask about what you are looking at | nothing |
@@ -351,7 +351,7 @@ settings and apply a preset; a save that collides with a newer version (the agen
 and the page reloads the newer layout and tells you.
 
 "Ask" on a server, resource or deployment, and the chat widget, open a normal Hermes chat titled
-**Cockpit** as a tab, with your question drafted and an `@coolify:` reference for the item; the
+**Coolifybrücke** as a tab, with your question drafted and an `@coolify:` reference for the item; the
 next question reuses that tab. Nothing is sent until you press send; the chat uses your
 configured provider and model.
 
@@ -370,13 +370,13 @@ load, the page says that it is starting.
 
 `coolify_notes` reads and appends to `COOLIFY.md`, a plain Markdown notebook about your instance in
 the plugin's data folder: facts that neither Hermes memory nor a skill holds ("shop-web needs
-`NPM_TOKEN` as a build variable", "upgraded 4.6.0 → 4.7.0"). You write it from the cockpit, the
-agent writes it after it learns something (a diagnosis), and the cockpit adds its own dated entry
+`NPM_TOKEN` as a build variable", "upgraded 4.6.0 → 4.7.0"). You write it from Coolifybrücke, the
+agent writes it after it learns something (a diagnosis), and Coolifybrücke adds its own dated entry
 when it sees the Coolify version change, a server appear or disappear, or a token's rights or scope
 change (compared with the last state it saw, kept in `observed-state.json`). Each entry is dated and
-signed `you`, `agent` or `cockpit`; writes are atomic, and known secret formats are masked before
-anything is stored. Hermes reads the notebook only when asked (`coolify_notes read` or
-`@coolify:notes`), never in every turn.
+signed `you`, `agent` or `coolifybruecke` (older entries: `cockpit`); writes are atomic, and known
+secret formats are masked before anything is stored. Hermes reads the notebook only when asked
+(`coolify_notes read` or `@coolify:notes`), never in every turn.
 
 ### Update notice
 
@@ -394,7 +394,8 @@ data folder). A newer release is also the `update_available` item of the attenti
   safety rules.
 - Context references put live state into a message in one token: `@coolify:overview` (the snapshot
   summary), `@coolify:<resource name>` (`@coolify:"name with spaces"`), `@coolify:deployment/<uuid>`,
-  `@coolify:server/<uuid>` and `@coolify:notes`. Each expands to at most 4000 characters, read with
+  `@coolify:server/<uuid>` (the name works too; it says how many resources run there and lists
+  them) and `@coolify:notes`. `@coolify:<resource name>` also names the resource's server. Each expands to at most 4000 characters, read with
   the same tokens and 10-second cache as the tools; a name that matches nothing says so and lists
   what the token can see. Hermes only expands the `@prefix:value` form, so a bare `@coolify` stays text.
 - The token formats the log redaction knows (GitHub, GitLab, npm, Slack, AWS, Google, Stripe,

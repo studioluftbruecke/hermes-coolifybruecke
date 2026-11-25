@@ -1,5 +1,5 @@
 """Behaviour: the WidgetType registry, layout validation, the three presets, the versioned
-store (compare-and-set), the `coolify_cockpit` tool and the layout routes. No network: the tool
+store (compare-and-set), the `coolify_layout` tool and the layout routes. No network: the tool
 and the routes only edit a file in a temp dir (the availability route uses the fake instance)."""
 
 import importlib
@@ -22,7 +22,7 @@ def store(lay, tmp_path):
 
 
 def tool(plugin, store, **args):
-    return json.loads(plugin.make_cockpit_handler(lambda: store)(args))
+    return json.loads(plugin.make_layout_handler(lambda: store)(args))
 
 
 def errors_of(lay, fn, *args):
@@ -141,6 +141,17 @@ def test_row_actions_defaults_carry_start_and_stop(lay):
     assert lay.validate_widget({"id": "r", "type": "resources", "props": {}}).props == {}
     apps = [w for w in lay.preset_widgets("overview", None) if w.type == "resources"][0]
     assert apps.props["row_actions"] == ["deploy", "restart", "stop", "start"]
+
+
+def test_the_server_prop_pins_apps_to_one_server_and_no_preset_sets_it(lay):
+    widget = lay.validate_widget({"id": "r", "type": "resources", "props": {"server": " app-1 "}})
+    assert widget.props == {"server": "app-1"}
+    assert "props.server must be text" in errors_of(lay, lay.validate_widget,
+                                                    {"id": "r", "type": "resources", "props": {"server": 1}})
+    assert "server" not in lay.TYPES["servers"].props_schema  # the Servers widget keeps its `servers` list
+    # D16: the presets are unchanged; the row text and the switch appear by themselves.
+    for name, params in (("overview", None), ("deploy_desk", {"environment": "staging"})):
+        assert all("server" not in w.props for w in lay.preset_widgets(name, params))
 
 
 # --- presets -------------------------------------------------------------------------------------
@@ -284,12 +295,12 @@ def test_an_unreadable_file_is_reported_and_kept_aside_on_start_over(lay, store)
     assert list(store.path.parent.glob("layout.json.unreadable-*"))
 
 
-# --- the coolify_cockpit tool ----------------------------------------------------------------------
+# --- the coolify_layout tool ----------------------------------------------------------------------
 
 @pytest.fixture
 def no_network(monkeypatch):
     def refuse(*a, **k):
-        raise AssertionError("coolify_cockpit must not make a network request")
+        raise AssertionError("coolify_layout must not make a network request")
 
     monkeypatch.setattr(urllib.request, "urlopen", refuse)
 
@@ -454,12 +465,12 @@ class RecordingCtx:
 def test_the_registered_tool_text_names_every_widget_type_with_its_label(plugin, lay):
     ctx = RecordingCtx()
     plugin._register_layout(ctx)
-    registered = ctx.tools["coolify_cockpit"]
+    registered = ctx.tools["coolify_layout"]
     text = registered["description"]
     assert registered["schema"]["description"] == text
     for t in lay.WIDGET_TYPES:
         assert f'{t.type} ("{t.label}")' in text, t.type
-    assert 'chat ("Cockpit chat")' in text and 'notebook ("Instance notebook")' in text
+    assert 'chat ("Coolifybrücke chat")' in text and 'notebook ("Instance notebook")' in text
     assert "{widget_types}" not in text
     assert "coolifybruecke:coolifybruecke" in text
     assert "position 0 for the top" in text
@@ -469,4 +480,4 @@ def test_the_registered_tool_text_names_every_widget_type_with_its_label(plugin,
 def test_a_new_widget_type_row_reaches_the_tool_text_without_a_second_list(plugin, lay, monkeypatch):
     extra = lay.WidgetType("status_page", "Status page", "A test row.", (), None, {})
     monkeypatch.setattr(lay, "WIDGET_TYPES", lay.WIDGET_TYPES + (extra,))
-    assert 'status_page ("Status page")' in plugin.cockpit_tool_schema()["description"]
+    assert 'status_page ("Status page")' in plugin.layout_tool_schema()["description"]

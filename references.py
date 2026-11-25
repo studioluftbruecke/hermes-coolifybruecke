@@ -1,7 +1,7 @@
 """`@coolify:` context references: what each one expands to, as size-capped text.
 
 Hermes expands `@<prefix>:<value>` references in a user's message before the model sees it, so live
-cockpit state enters a turn in one token instead of a tool call. Hermes' parser needs the colon, so
+Coolifybrücke state enters a turn in one token instead of a tool call. Hermes' parser needs the colon, so
 the snapshot summary is `@coolify:overview` (also `snapshot`, `all`); a bare `@coolify` stays text.
 
     @coolify:overview              the snapshot summary (servers, failures, resources)
@@ -79,7 +79,8 @@ def render_resource(resource: dict, snapshot: dict, history: Optional[list[dict]
     """One resource: identity, state, domain, its running and failed deployments, recent history."""
     lines = [f"{resource['name']} ({resource['kind']}) in {resource.get('project') or '?'} / "
              f"{resource.get('environment') or '?'}: status {resource.get('status') or 'unknown'}",
-             f"uuid {resource['uuid']}"]
+             f"uuid {resource['uuid']}",
+             "server " + (" + ".join(resource.get("servers") or []) or "unknown")]
     if resource.get("fqdn"):
         lines.append("domain " + ", ".join(d for d in str(resource["fqdn"]).split(",") if d))
     deps = snapshot.get("deployments") or {}
@@ -119,10 +120,17 @@ def find_server(servers: list[dict], query: str) -> Optional[dict]:
     return partial[0] if len(partial) == 1 else None
 
 
-def render_server(server: dict, server_line: str) -> str:
+def render_server(server: dict, server_line: str, resources: Optional[list[dict]] = None, counts: str = "",
+                  listing: Optional[list[str]] = None, unknown: int = 0, cause: str = "") -> str:
+    """One server's state and load, then how many resources run on it and their names."""
     lines = [f"server {server.get('name')} (uuid {server.get('uuid')})", server_line.lstrip("- ")]
     if server.get("metrics_enabled") is False:
         lines.append("Sentinel metrics are off here, so there is no load history.")
+    if resources is not None:
+        lines.append(f"runs {counts}" + (":" if listing else ""))
+        lines += [f"- {x}" for x in listing or []]
+        if unknown:
+            lines.append(f"{unknown} resources with unknown server not counted: {cause}")
     return "\n".join(lines)
 
 

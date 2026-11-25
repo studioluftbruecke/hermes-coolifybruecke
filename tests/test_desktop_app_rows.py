@@ -1,7 +1,7 @@
 """The Apps rows' Start and Stop buttons, run from the real desktop/plugin.js in node.
 
 desktop_page_harness.mjs stands in for react, react/jsx-runtime and @hermes/plugin-sdk.
-desktop_app_rows.mjs mounts the cockpit page against fixed route answers and asserts which buttons
+desktop_app_rows.mjs mounts the Coolifybrücke page against fixed route answers and asserts which buttons
 each measured status class shows (milestone SS-1; the vocabulary comes from the SS-0 measurement on
 the live instance), and that an app link (#/coolifybruecke?app=<uuid>) opens its row. Each case runs in its own node process, because the page keeps module state.
 """

@@ -522,7 +522,7 @@ def test_agent_is_refused_on_production_by_default_and_his_click_still_works(pkg
     assert hermes.handler({"kind": "restart", "target": "shop-web"})["error"] in ("protected", "not_approved")
     status, body = pkg.api_action(settings(), secrets("tok-full", None), {"kind": "restart", "target": "shop-web"},
                                   transport=fake)
-    assert status == 200 and body["sent"]  # the cockpit's own button is never refused here
+    assert status == 200 and body["sent"]  # Coolifybrücke's own button is never refused here
 
 
 def test_switch_on_asks_each_time_with_a_one_time_key_naming_the_environment(pkg):

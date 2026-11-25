@@ -1,0 +1,628 @@
+{
+ "servers": [
+  {
+   "uuid": "srv1",
+   "name": "server-a",
+   "reachable": true,
+   "usable": true,
+   "metrics_enabled": false,
+   "metrics": null
+  },
+  {
+   "uuid": "srv2",
+   "name": "server-b",
+   "reachable": true,
+   "usable": true,
+   "metrics_enabled": false,
+   "metrics": null
+  }
+ ],
+ "resources": [
+  {
+   "uuid": "res001",
+   "name": "ser-001",
+   "kind": "service",
+   "project": "Project 01",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res002",
+   "name": "app-002",
+   "kind": "application",
+   "project": "Project 02",
+   "environment": "production",
+   "status": "running:unknown",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res003",
+   "name": "app-003",
+   "kind": "application",
+   "project": "Project 02",
+   "environment": "staging",
+   "status": "running:unknown",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res004",
+   "name": "app-004",
+   "kind": "application",
+   "project": "Project 03",
+   "environment": "production",
+   "status": "exited:unhealthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res005",
+   "name": "app-005",
+   "kind": "application",
+   "project": "Project 03",
+   "environment": "production",
+   "status": "exited:unhealthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res006",
+   "name": "ser-006",
+   "kind": "service",
+   "project": "Project 03",
+   "environment": "production",
+   "status": "exited",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res007",
+   "name": "app-007",
+   "kind": "application",
+   "project": "Project 04",
+   "environment": "production",
+   "status": "running:unknown",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res008",
+   "name": "ser-008",
+   "kind": "service",
+   "project": "Project 04",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res009",
+   "name": "app-009",
+   "kind": "application",
+   "project": "Project 05",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res010",
+   "name": "app-010",
+   "kind": "application",
+   "project": "Project 06",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-b"
+   ]
+  },
+  {
+   "uuid": "res011",
+   "name": "ser-011",
+   "kind": "service",
+   "project": "Project 07",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-b"
+   ]
+  },
+  {
+   "uuid": "res012",
+   "name": "app-012",
+   "kind": "application",
+   "project": "Project 08",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-b"
+   ]
+  },
+  {
+   "uuid": "res013",
+   "name": "ser-013",
+   "kind": "service",
+   "project": "Project 08",
+   "environment": "production",
+   "status": "exited",
+   "servers": [
+    "server-b"
+   ]
+  },
+  {
+   "uuid": "res014",
+   "name": "app-014",
+   "kind": "application",
+   "project": "Project 09",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res015",
+   "name": "app-015",
+   "kind": "application",
+   "project": "Project 09",
+   "environment": "staging",
+   "status": "exited:unhealthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res016",
+   "name": "app-016",
+   "kind": "application",
+   "project": "Project 10",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res017",
+   "name": "app-017",
+   "kind": "application",
+   "project": "Project 10",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res018",
+   "name": "app-018",
+   "kind": "application",
+   "project": "Project 10",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res019",
+   "name": "app-019",
+   "kind": "application",
+   "project": "Project 10",
+   "environment": "staging",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res020",
+   "name": "app-020",
+   "kind": "application",
+   "project": "Project 10",
+   "environment": "staging",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res021",
+   "name": "app-021",
+   "kind": "application",
+   "project": "Project 10",
+   "environment": "staging",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res022",
+   "name": "app-022",
+   "kind": "application",
+   "project": "Project 11",
+   "environment": "production",
+   "status": "running:unknown",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res023",
+   "name": "ser-023",
+   "kind": "service",
+   "project": "Project 11",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res024",
+   "name": "ser-024",
+   "kind": "service",
+   "project": "Project 11",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res025",
+   "name": "app-025",
+   "kind": "application",
+   "project": "Project 12",
+   "environment": "production",
+   "status": "running:unknown",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res026",
+   "name": "ser-026",
+   "kind": "service",
+   "project": "Project 13",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res027",
+   "name": "app-027",
+   "kind": "application",
+   "project": "Project 14",
+   "environment": "production",
+   "status": "running:unknown",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res028",
+   "name": "ser-028",
+   "kind": "service",
+   "project": "Project 14",
+   "environment": "production",
+   "status": "exited",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res029",
+   "name": "app-029",
+   "kind": "application",
+   "project": "Project 14",
+   "environment": "staging",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res030",
+   "name": "app-030",
+   "kind": "application",
+   "project": "Project 15",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res031",
+   "name": "app-031",
+   "kind": "application",
+   "project": "Project 15",
+   "environment": "staging",
+   "status": "exited:unhealthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res032",
+   "name": "ser-032",
+   "kind": "service",
+   "project": "Project 16",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-b"
+   ]
+  },
+  {
+   "uuid": "res033",
+   "name": "ser-033",
+   "kind": "service",
+   "project": "Project 17",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-b"
+   ]
+  },
+  {
+   "uuid": "res034",
+   "name": "ser-034",
+   "kind": "service",
+   "project": "Project 18",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-b"
+   ]
+  },
+  {
+   "uuid": "res035",
+   "name": "ser-035",
+   "kind": "service",
+   "project": "Project 18",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-b"
+   ]
+  },
+  {
+   "uuid": "res036",
+   "name": "ser-036",
+   "kind": "service",
+   "project": "Project 19",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-b"
+   ]
+  },
+  {
+   "uuid": "res037",
+   "name": "app-037",
+   "kind": "application",
+   "project": "Project 20",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res038",
+   "name": "app-038",
+   "kind": "application",
+   "project": "Project 20",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res039",
+   "name": "app-039",
+   "kind": "application",
+   "project": "Project 20",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res040",
+   "name": "app-040",
+   "kind": "application",
+   "project": "Project 20",
+   "environment": "production",
+   "status": "running:unknown",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res041",
+   "name": "app-041",
+   "kind": "application",
+   "project": "Project 20",
+   "environment": "production",
+   "status": "running:unknown",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res042",
+   "name": "ser-042",
+   "kind": "service",
+   "project": "Project 20",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res043",
+   "name": "ser-043",
+   "kind": "service",
+   "project": "Project 20",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res044",
+   "name": "ser-044",
+   "kind": "service",
+   "project": "Project 20",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res045",
+   "name": "ser-045",
+   "kind": "service",
+   "project": "Project 20",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res046",
+   "name": "ser-046",
+   "kind": "service",
+   "project": "Project 20",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res047",
+   "name": "app-047",
+   "kind": "application",
+   "project": "Project 20",
+   "environment": "staging",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res048",
+   "name": "app-048",
+   "kind": "application",
+   "project": "Project 20",
+   "environment": "staging",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res049",
+   "name": "app-049",
+   "kind": "application",
+   "project": "Project 21",
+   "environment": "production",
+   "status": "running:unknown",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res050",
+   "name": "app-050",
+   "kind": "application",
+   "project": "Project 22",
+   "environment": "development",
+   "status": "running:unknown",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res051",
+   "name": "app-051",
+   "kind": "application",
+   "project": "Project 22",
+   "environment": "production",
+   "status": "running:unknown",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res052",
+   "name": "app-052",
+   "kind": "application",
+   "project": "Project 22",
+   "environment": "staging",
+   "status": "running:unknown",
+   "servers": [
+    "server-a"
+   ]
+  },
+  {
+   "uuid": "res053",
+   "name": "ser-053",
+   "kind": "service",
+   "project": "Project 23",
+   "environment": "production",
+   "status": "exited",
+   "servers": [
+    "server-b"
+   ]
+  },
+  {
+   "uuid": "res054",
+   "name": "ser-054",
+   "kind": "service",
+   "project": "Project 24",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-b"
+   ]
+  },
+  {
+   "uuid": "res055",
+   "name": "ser-055",
+   "kind": "service",
+   "project": "Project 25",
+   "environment": "production",
+   "status": "running:healthy",
+   "servers": [
+    "server-a"
+   ]
+  }
+ ],
+ "fleet": {}
+}

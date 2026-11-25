@@ -222,7 +222,7 @@ def test_cli_parser_and_handler(m, tmp_path, monkeypatch):
     parser = argparse.ArgumentParser()
     m.pkg._cli_setup(parser)
     args = parser.parse_args(["alerts", "on", "--every", "10m"])
-    assert (args.cockpit_command, args.alerts_command, args.every, args.deliver) == ("alerts", "on", "10m", "local")
+    assert (args.plugin_command, args.alerts_command, args.every, args.deliver) == ("alerts", "on", "10m", "local")
     args = parser.parse_args(["tick", "--peek"])
     seen = {}
     monkeypatch.setattr(m.pkg, "tick_report", lambda gs, gx, peek=False: (seen.setdefault("peek", peek) and "", {"ok": True}))

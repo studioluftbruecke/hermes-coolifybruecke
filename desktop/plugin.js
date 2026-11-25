@@ -3,10 +3,10 @@
 //
 // Everything the page shows comes from this plugin's own backend routes (dashboard/plugin_api.py)
 // through ctx.rest; the layout lives in the plugin data dir on the Hermes backend, so the agent's
-// coolify_cockpit tool and this page edit the same file (every save is a compare-and-set on its
+// coolify_layout tool and this page edit the same file (every save is a compare-and-set on its
 // version; a 409 means someone else saved first). Actions are the user's own clicks: each one
 // opens a confirm dialog naming action, resource, environment and server, built from the route's
-// dry run, and runs only the API token. The cockpit chat is a normal Hermes session opened
+// dry run, and runs only the API token. The Coolifybrücke chat is a normal Hermes session opened
 // beside the page with a drafted question; nothing is ever sent without the user pressing send.
 //
 // Plain ESM, loaded uncompiled: jsx() calls, imports only @hermes/plugin-sdk, react and
@@ -47,10 +47,10 @@ import { jsx, jsxs } from 'react/jsx-runtime'
 
 const ID = 'coolifybruecke'
 // This half's version; equal to plugin.yaml's (a test checks). GET /setup names the Hermes half's.
-const VERSION = '0.2.8'
+const VERSION = '0.3.0'
 const PATH = '/coolifybruecke'
 const TAG = '[' + ID + ']'
-const SESSION_TITLE = 'Cockpit'
+const SESSION_TITLE = 'Coolifybrücke'
 const NAV_LABEL = 'Coolifybrücke'
 const SETTINGS_PAGE = '/settings?tab=plugins&agent=' + ID
 const PLUGINS_PAGE = '/capabilities?tab=plugins'
@@ -642,7 +642,7 @@ function useRights() {
     const reason = canAct
       ? null
       : (body.unavailable && body.unavailable.message) ||
-        (body.action_token ? 'The API token lacks deploy, so the cockpit shows no action buttons.' : null)
+        (body.action_token ? 'The API token lacks deploy, so Coolifybrücke shows no action buttons.' : null)
     const inScope = resource => {
       if (!canAct || !resource || !scope) return false
       if (scope.all) return true
@@ -894,7 +894,7 @@ function ActionConfirm() {
           data && data.token ? el(PlanLine, { name: 'Token', value: data.token.setting + ' (sha256 ' + data.token.fingerprint + ')' }) : null,
           data && data.request ? el(PlanLine, { name: 'Request', value: el('span', { style: S.mono }, data.request.method + ' ' + data.request.path + paramText(data.request.params)) }) : null,
           pending.kind === 'stop'
-            ? el(Note, { tone: 'warn' }, 'Stop takes the app offline until you start it again. The cockpit always sends docker_cleanup=false.')
+            ? el(Note, { tone: 'warn' }, 'Stop takes the app offline until you start it again. Coolifybrücke always sends docker_cleanup=false.')
             : null,
           protectedEnv(target.environment) ? el(Note, { tone: 'bad' }, 'This is ' + target.environment + '.') : null
         )
@@ -913,7 +913,7 @@ function ActionConfirm() {
       DialogContent,
       {
         className: 'max-w-md',
-        'data-cockpit': 'action-confirm',
+        'data-coolifybruecke': 'action-confirm',
         onOpenAutoFocus: event => {
           // Keep focus inside the dialog (Enter on the page's button would open a second one);
           // the confirm button takes it once the check has passed. Enter clicks the focused button;
@@ -1003,7 +1003,7 @@ function ActionTracker() {
   return el('div', { style: S.col(6) }, ...tracked.map(item => el(TrackedAction, { item, key: item.id })))
 }
 
-// ── cockpit chat: a normal Hermes session beside the page ───────────────────────────────────────
+// ── Coolifybrücke chat: a normal Hermes session beside the page ───────────────────────────────────────
 
 const sleep = ms => new Promise(resolve => window.setTimeout(resolve, ms))
 
@@ -1040,13 +1040,13 @@ async function createSession(profile) {
   if (!stored) throw new Error('session.create returned no stored_session_id')
   // session.create is lazy; naming it materializes the stored row so it can be opened.
   if (runtime) await host.request('session.title', { session_id: runtime, title: SESSION_TITLE })
-  log('cockpit session created', { stored })
+  log('chat session created', { stored })
   return stored
 }
 
-// Opens (or reuses) the "Cockpit" chat as a tab beside the page and drafts `text` into it.
+// Opens (or reuses) the "Coolifybrücke" chat as a tab beside the page and drafts `text` into it.
 // Never submits. Falls back to a plain new chat with the draft when session control fails.
-async function openCockpitChat(text) {
+async function openChat(text) {
   const profile = readAtom('profile') || readAtom('focusedSessionProfile') || ''
   const storageKey = 'session:' + profile
   const storage = pluginCtx && pluginCtx.storage
@@ -1058,7 +1058,7 @@ async function openCockpitChat(text) {
       try {
         await open(stored)
       } catch (error) {
-        log('stored cockpit session did not open, creating a new one', error && error.message)
+        log('stored chat session did not open, creating a new one', error && error.message)
         stored = null
       }
     }
@@ -1111,7 +1111,7 @@ function ask(kind, item) {
     question = 'Give me a short status of my Coolify instance.'
   }
   addChip(chip)
-  return openCockpitChat(question + ' ' + chip.ref + ' ')
+  return openChat(question + ' ' + chip.ref + ' ')
 }
 
 function AskButton({ kind, item, label }) {
@@ -1127,7 +1127,7 @@ function AskButton({ kind, item, label }) {
           .finally(() => setBusy(false))
       },
       size: 'xs',
-      title: 'Open the Cockpit chat beside this page with this ' + kind + ' as context. Nothing is sent until you press send.',
+      title: 'Open the Coolifybrücke chat beside this page with this ' + kind + ' as context. Nothing is sent until you press send.',
       variant: 'ghost'
     },
     el(Codicon, { name: 'comment-discussion', size: '0.75rem' }),
@@ -1175,7 +1175,7 @@ function QueryError({ error, what }) {
   return el(
     'div',
     { style: S.col(6) },
-    el(Note, { tone: 'bad' }, (what ? what + ': ' : '') + (notFound ? 'the cockpit backend is not enabled on this profile (Hermes: plugins enable coolifybruecke).' : plain(error.message))),
+    el(Note, { tone: 'bad' }, (what ? what + ': ' : '') + (notFound ? 'the Coolifybrücke backend is not enabled on this profile (Hermes: plugins enable coolifybruecke).' : plain(error.message))),
     hint ? el(Small, {}, plain(hint)) : null
   )
 }
@@ -1234,7 +1234,7 @@ function TokenBlock({ token, showProjects }) {
 }
 
 // "Check again": { profile, running, at } shared by every place that shows the button, so the
-// settings page and the cockpit's Connection widget show one check. `at` is when the last click
+// settings page and Coolifybrücke's Connection widget show one check. `at` is when the last click
 // finished (ISO); a successful check shows the backend's own checked_at instead.
 const $check = atom({ profile: null, running: false, at: null })
 
@@ -1297,7 +1297,7 @@ function notSetUpLine(data) {
   return 'Not set up: add ' + (missing.join(' and ') || 'the settings') + ' in the plugin settings.'
 }
 
-// The setup line while the Hermes half is off in this profile (the cockpit's setup step 1).
+// The setup line while the Hermes half is off in this profile (Coolifybrücke's setup step 1).
 function PluginOffLine() {
   return el(
     'div',
@@ -1477,6 +1477,31 @@ function signalCount(data, signal) {
 
 function attentionFor(data, uuid) {
   return ((data && data.attention) || []).filter(a => a.resource_uuid === uuid)
+}
+
+// The server each resource runs on (0.3.0): `servers` on every resource, names, primary first; []
+// means unknown. Server text and the server switch appear only when there is more than one server
+// and at least one row names its server, so a one-server instance, or an older backend half that
+// sends no `servers`, shows none of it.
+function serverNames(data) {
+  const names = []
+  for (const n of ((data && data.servers) || []).map(s => s.name).concat(((data && data.resources) || []).flatMap(r => r.servers || []))) {
+    if (n && !names.includes(n)) names.push(String(n))
+  }
+  return names
+}
+
+function knowsServers(data) {
+  return ((data && data.resources) || []).some(r => (r.servers || []).length > 0)
+}
+
+function multiServer(data) {
+  return knowsServers(data) && serverNames(data).length > 1
+}
+
+function onServer(resource, name) {
+  const wanted = String(name || '').toLowerCase()
+  return (resource.servers || []).some(n => String(n).toLowerCase() === wanted)
 }
 
 function protectedSet(caps) {
@@ -1713,7 +1738,7 @@ function SignalBadges({ items }) {
   )
 }
 
-function AppRow({ resource, row, items, rowActions, rights, locked, showEnvKeys }) {
+function AppRow({ resource, row, items, rowActions, rights, locked, showEnvKeys, showServer }) {
   const open = useValue($openApp)
   const isOpen = Boolean(open && open.uuid === resource.uuid)
   const ref = useRef(null)
@@ -1755,6 +1780,9 @@ function AppRow({ resource, row, items, rowActions, rights, locked, showEnvKeys 
         resource.name
       ),
       resource.kind !== 'application' ? el(Badge, { size: 'xs', variant: 'outline' }, resource.kind) : null,
+      showServer && (resource.servers || []).length
+        ? el('span', { 'data-cc-server-of': resource.uuid, style: { ...S.small, ...S.ellipsis, maxWidth: 180 } }, resource.servers.join(' + '))
+        : null,
       locked ? el(Codicon, { name: 'lock', size: '0.7rem', title: 'Protected: the agent may not act here', style: { color: T.tertiary } }) : null,
       el(SignalBadges, { items }),
       el('span', { style: { flex: 1 } }),
@@ -1814,17 +1842,29 @@ function ResourcesWidget({ widget }) {
   const props = widget.props || {}
   const [query, setQuery] = useState('')
   const [env, setEnv] = useState('')
-  if (snap.isLoading) return el(Loading, { rows: 5 })
-  if (snap.error) return el(QueryError, { error: snap.error, what: 'Snapshot' })
+  const [srv, setSrv] = useState('')
+  const open = useValue($openApp)
   const data = snap.data || {}
-  const fleet = data.fleet || {}
-  const all = (data.resources || []).filter(
+  const fitting = (data.resources || []).filter(
     r =>
       matches(r.project, props.project) &&
       (!props.environment || String(r.environment || '').toLowerCase() === String(props.environment).toLowerCase()) &&
       (!props.kinds || !props.kinds.length || props.kinds.includes(r.kind)) &&
       matches(r.name, props.name_contains)
   )
+  const all = props.server ? fitting.filter(r => onServer(r, props.server)) : fitting
+  const multi = multiServer(data)
+  const servers = multi && !props.server ? serverNames(data) : []
+  const server = props.server || (servers.includes(srv) ? srv : '')
+  // A link to a row the switch hides resets the switch, so the row opens.
+  const hiddenByLink = Boolean(open && open.link && srv && all.some(r => r.uuid === open.uuid && !onServer(r, srv)))
+  useEffect(() => {
+    if (hiddenByLink) setSrv('')
+  }, [hiddenByLink])
+  if (snap.isLoading) return el(Loading, { rows: 5 })
+  if (snap.error) return el(QueryError, { error: snap.error, what: 'Snapshot' })
+  const fleet = data.fleet || {}
+  const unknown = server && knowsServers(data) ? (props.server ? fitting : all).filter(r => !(r.servers || []).length).length : 0
   const items = new Map(all.map(r => [r.uuid, attentionFor(data, r.uuid)]))
   const envs = Array.from(new Set(all.map(r => r.environment).filter(Boolean))).sort((a, b) => isProtected(caps, b) - isProtected(caps, a) || a.localeCompare(b))
   const shown = all.filter(
@@ -1832,6 +1872,7 @@ function ResourcesWidget({ widget }) {
       statusMatches(r.status, props.status, items.get(r.uuid)) &&
       (!focus || items.get(r.uuid).some(a => a.signal === focus)) &&
       (!env || r.environment === env) &&
+      (props.server || !server || onServer(r, server)) &&
       (!query || matches(r.name + ' ' + r.project + ' ' + (r.fqdn || ''), query))
   )
   const rank = r => (items.get(r.uuid).some(a => a.severity === 'bad') ? 0 : items.get(r.uuid).length ? 1 : 2)
@@ -1840,8 +1881,9 @@ function ResourcesWidget({ widget }) {
   const others = sorted.filter(r => r.kind !== 'application')
   const groups = (props.environment ? [props.environment] : envs).map(e => ({ env: e, list: apps.filter(r => r.environment === e) })).filter(g => g.list.length)
   const known = r => Boolean(fleet[r.uuid] && fleet[r.uuid].last_good && fleet[r.uuid].last_good.commit && fleet[r.uuid].last_good.commit !== 'HEAD')
-  const pairs = props.pairs !== false && !props.environment && !focus ? pairsOf(all).filter(list => list.every(known)) : []
-  const row = r => el(AppRow, { key: r.uuid, resource: r, row: fleet[r.uuid], items: items.get(r.uuid), rowActions: props.row_actions, rights, locked: isProtected(caps, r.environment), showEnvKeys: props.show_env_keys })
+  const pairs = props.pairs !== false && !props.environment && !focus && !server ? pairsOf(all).filter(list => list.every(known)) : []
+  const row = r => el(AppRow, { key: r.uuid, resource: r, row: fleet[r.uuid], items: items.get(r.uuid), rowActions: props.row_actions, rights, locked: isProtected(caps, r.environment), showEnvKeys: props.show_env_keys, showServer: multi && !server })
+  const filteredOn = [props.project, props.environment, props.server].filter(Boolean).join(' / ')
   return el(
     'div',
     { style: S.col(8) },
@@ -1852,11 +1894,15 @@ function ResourcesWidget({ widget }) {
       !props.environment && envs.length > 1
         ? el(SegmentedControl, { onChange: id => setEnv(id === '*' ? '' : id), options: [{ id: '*', label: 'All' }].concat(envs.map(e => ({ id: e, label: e }))), sizing: 'content', value: env || '*' })
         : null,
+      servers.length
+        ? el('span', { 'data-cc-server-switch': '', title: 'Show the apps of one server' }, el(SegmentedControl, { onChange: id => setSrv(id === '*' ? '' : id), options: [{ id: '*', label: 'All servers' }].concat(servers.map(n => ({ id: n, label: n }))), sizing: 'content', value: server || '*' }))
+        : null,
       focus ? el(Button, { onClick: () => $focus.set(null), size: 'xs', variant: 'ghost' }, el(Codicon, { name: 'close', size: '0.7rem' }), 'only ' + focus.replace('_', ' ')) : null,
       el('span', { style: { flex: 1 } }),
       el(Small, {}, shown.length + ' of ' + all.length)
     ),
     (props.row_actions || []).length && !rights.canAct && rights.loaded ? el(Small, {}, 'No action buttons: ' + (rights.reason || 'needs `deploy`') + '.') : null,
+    unknown ? el('span', { 'data-cc-unknown-server': String(unknown), style: S.small }, unknown + (unknown === 1 ? ' resource' : ' resources') + ' with unknown server hidden.') : null,
     pairs.length && !query && !env
       ? el('div', { style: S.col(0) }, el('span', { style: { ...S.label, padding: '4px 0' } }, 'Pipelines'), ...pairs.map(list => el(PairLine, { key: list.map(r => r.uuid).join(), apps: list, caps, fleet, rights })))
       : null,
@@ -1871,7 +1917,12 @@ function ResourcesWidget({ widget }) {
           others.length ? el('div', { key: 'g-other', style: { ...S.label, padding: '8px 0 2px' } }, 'Services and databases · ' + others.length) : null,
           ...others.map(row)
         )
-      : el(EmptyState, { title: 'Nothing matches', description: all.length ? 'Clear the filters to see all ' + all.length + '.' : 'This widget filters on ' + [props.project, props.environment].filter(Boolean).join(' / ') + '.' })
+      : el(EmptyState, {
+          title: 'Nothing matches',
+          description: all.length
+            ? (server && !props.server ? 'Nothing on ' + server + ' matches. ' : '') + 'Clear the filters to see all ' + all.length + '.'
+            : filteredOn ? 'This widget filters on ' + filteredOn + '.' : 'No resources yet.'
+        })
   )
 }
 
@@ -1961,7 +2012,7 @@ function valueAt(list, at) {
   return best[1]
 }
 
-function ServerCard({ server, metrics, history, range, ranged, ticks, diskWarn }) {
+function ServerCard({ server, metrics, history, range, ranged, ticks, diskWarn, resources }) {
   const [cursor, setCursor] = useState(null)
   const m = server.metrics
   const current = (m && m.current) || {}
@@ -1980,6 +2031,7 @@ function ServerCard({ server, metrics, history, range, ranged, ticks, diskWarn }
       el(StatusDot, { tone }),
       el('span', { style: S.strong }, server.name),
       el(Small, {}, server.reachable ? (server.usable ? 'reachable' : 'reachable, not usable') : 'unreachable'),
+      resources != null ? el('span', { 'data-cc-server-count': String(resources), style: S.small }, resources + (resources === 1 ? ' resource' : ' resources')) : null,
       full ? el(Badge, { variant: 'warn', title: 'From the last 7 days of disk use; an estimate' }, 'disk full in about ' + Math.max(1, Math.round(full.days)) + ' d') : null,
       el(Small, {}, cursor != null ? ago(new Date(cursor).toISOString()) : inRange ? inRange + (inRange === 1 ? ' deploy' : ' deploys') + ' in this range' : ''),
       el('span', { style: { flex: 1 } }),
@@ -2042,6 +2094,7 @@ function ServersWidget({ widget }) {
     )
   }
   const deploys = (snap.data.latest_deployments || []).concat(((snap.data.deployments || {}).running) || [])
+  const counted = knowsServers(snap.data) // never "0 resources" from a backend half that sends no servers
   const ticksFor = server =>
     deploys.filter(d => d.server_name === server.name && d.created_at).map(d => ({ uuid: d.uuid, name: d.resource_name || 'deploy', at: Date.parse(d.created_at) }))
   return el(
@@ -2056,7 +2109,7 @@ function ServersWidget({ widget }) {
       el(SegmentedControl, { onChange: id => $range.set(id), options: RANGES.map(r => ({ id: r.id, label: r.label })), sizing: 'content', value: range })
     ),
     ...servers.map(server =>
-      el(ServerCard, { key: server.uuid, server, metrics, history: props.history !== false, range, ranged: ranged.data, ticks: ticksFor(server), diskWarn })
+      el(ServerCard, { key: server.uuid, server, metrics, history: props.history !== false, range, ranged: ranged.data, ticks: ticksFor(server), diskWarn, resources: counted ? (snap.data.resources || []).filter(r => (r.servers || []).includes(server.name)).length : null })
     )
   )
 }
@@ -2134,8 +2187,8 @@ function DiagnosisCard({ card, deployment }) {
         Button,
         {
           onClick: () =>
-            openCockpitChat(
-              'The cockpit diagnosed ' + (deployment ? 'the failed deployment of ' + (deployment.resource_name || 'my app') : 'a pasted deployment log') + ' as "' + card.title + '" (' + card.class + ', ' + card.confidence + ' confidence). Help me fix it.' +
+            openChat(
+              'Coolifybrücke diagnosed ' + (deployment ? 'the failed deployment of ' + (deployment.resource_name || 'my app') : 'a pasted deployment log') + ' as "' + card.title + '" (' + card.class + ', ' + card.confidence + ' confidence). Help me fix it.' +
                 (deployment ? ' @coolify:deployment/' + deployment.uuid + ' ' : ' ')
             ),
           size: 'xs',
@@ -2272,7 +2325,7 @@ function NotebookWidget({ widget }) {
   )
 }
 
-// ── cockpit chat ─────────────────────────────────────────────────────────────────────────────────
+// ── Coolifybrücke chat ─────────────────────────────────────────────────────────────────────────────────
 
 const DEFAULT_SUGGESTIONS = ['Why did the last staging deploy fail?', 'Is any server overloaded?', 'What changed on this instance this week?']
 
@@ -2287,7 +2340,7 @@ function ChatWidget({ widget }) {
     if (!q) return
     setState({ busy: true, result: null })
     const refs = chips.map(c => c.ref).join(' ')
-    const result = await openCockpitChat(q + (refs ? ' ' + refs : '') + ' ')
+    const result = await openChat(q + (refs ? ' ' + refs : '') + ' ')
     setState({ busy: false, result })
     if (!question) setText('')
   }
@@ -2322,7 +2375,7 @@ function ChatWidget({ widget }) {
           void send()
         }
       },
-      placeholder: 'Ask about what you see. Opens the Cockpit chat beside this page with your question drafted; you press send.',
+      placeholder: 'Ask about what you see. Opens the Coolifybrücke chat beside this page with your question drafted; you press send.',
       rows: 2,
       value: text
     }),
@@ -2334,7 +2387,7 @@ function ChatWidget({ widget }) {
       el(Button, { disabled: !text.trim() || state.busy, onClick: () => send(), size: 'xs' }, el(Codicon, { name: 'comment-discussion', size: '0.75rem' }), 'Draft in chat')
     ),
     state.result
-      ? el(Small, {}, state.result.mode === 'tab' ? 'Drafted in the Cockpit chat beside this page. Review it and press send.' : state.result.ok ? 'Opened a new chat with the draft (session control was not available).' : 'Could not fill the draft; the chat is open, paste your question there.')
+      ? el(Small, {}, state.result.mode === 'tab' ? 'Drafted in the Coolifybrücke chat beside this page. Review it and press send.' : state.result.ok ? 'Opened a new chat with the draft (session control was not available).' : 'Could not fill the draft; the chat is open, paste your question there.')
       : el(Small, { style: { color: T.quaternary } }, 'Runs as a normal Hermes chat on your provider and model; actions there still ask for your approval.')
   )
 }
@@ -2504,7 +2557,7 @@ function WidgetFrame({ widget, type, avail, editing, index, count, edit }) {
       { editing, right, subtitle: editing ? (widget.id === widget.type.replace(/_/g, '-') ? widget.type : widget.id + ' · ' + widget.type) : null, title },
       editing && propsOpen ? el('div', { style: { margin: '-10px -12px 0' } }, el(PropsEditor, { onChange: patch => edit.update(index, patch), type, widget })) : null,
       !Renderer
-        ? el(Note, { tone: 'warn' }, 'This cockpit does not know the widget type "' + widget.type + '". Update the plugin, or remove the widget.')
+        ? el(Note, { tone: 'warn' }, 'This version of Coolifybrücke does not know the widget type "' + widget.type + '". Update the plugin, or remove the widget.')
         : blocked
           ? el(NotAvailable, { row: avail })
           : el(Renderer, { widget }),
@@ -2600,7 +2653,7 @@ function EditToolbar({ catalog, draft, setDraft, dirty, saving, onSave, onCancel
       el(Small, { style: { width: 64 } }, 'Presets'),
       ...presets.map(p => el(Button, { key: p.name, onClick: () => onPreset(p), size: 'xs', title: p.description, variant: 'outline' }, p.label))
     ),
-    el(Small, { style: { color: T.quaternary } }, 'The agent edits the same layout: try "add a notebook widget to my cockpit".')
+    el(Small, { style: { color: T.quaternary } }, 'The agent edits the same layout: try "add a notebook widget to my Coolifybrücke page".')
   )
 }
 
@@ -2626,7 +2679,7 @@ function StandaloneDiagnosis({ hasWidget }) {
 // measured; later calls 0.2-0.3 s). Past COLD_START_MS without a first answer, say so instead of
 // showing skeletons that look stuck.
 const COLD_START_MS = 2500
-const COLD_START_TEXT = 'Starting the cockpit backend on the server; the first load can take a few seconds.'
+const COLD_START_TEXT = 'Starting the Coolifybrücke backend on the server; the first load can take a few seconds.'
 
 function useColdStart(waiting) {
   const [late, setLate] = useState(false)
@@ -2641,7 +2694,7 @@ function useColdStart(waiting) {
   return waiting && late
 }
 
-function CockpitPage() {
+function PluginPage() {
   const page = usePageState()
   const profile = useProfile()
   const client = useQueryClient()
@@ -2699,7 +2752,7 @@ function CockpitPage() {
       const out = await rest('/layout', { method: 'PUT', body: { expected_version: draft.base_version, layout: { preset: draft.preset, widgets: draft.widgets } } })
       client.setQueryData(qk(profile, 'layout'), old => ({ ...(old || {}), layout: out.layout }))
       lastVersion.current = out.layout.version
-      page.banner.set({ tone: 'good', title: 'Layout saved as version ' + out.layout.version, text: 'The agent sees the same layout (coolify_cockpit).' })
+      page.banner.set({ tone: 'good', title: 'Layout saved as version ' + out.layout.version, text: 'The agent sees the same layout (coolify_layout).' })
       stopEdit()
     } catch (error) {
       if (error.status === 409 && error.body && error.body.layout) {
@@ -2800,9 +2853,9 @@ function CockpitPage() {
         : layoutQ.isLoading
         ? el(Loading, { rows: 6 })
         : layoutQ.error
-          ? el(ErrorState, { description: layoutQ.error.message + (layoutQ.error.body && layoutQ.error.body.hint ? ' ' + layoutQ.error.body.hint : ''), title: 'The cockpit layout did not load' })
+          ? el(ErrorState, { description: layoutQ.error.message + (layoutQ.error.body && layoutQ.error.body.hint ? ' ' + layoutQ.error.body.hint : ''), title: 'The Coolifybrücke layout did not load' })
           : widgets.length === 0
-            ? el(EmptyState, { title: 'No widgets', description: 'Edit the layout to add widgets or apply a preset, or ask the agent to arrange the cockpit.' })
+            ? el(EmptyState, { title: 'No widgets', description: 'Edit the layout to add widgets or apply a preset, or ask the agent to arrange the Coolifybrücke page.' })
             : el(
                 'div',
                 { style: { display: 'grid', gridTemplateColumns: 'repeat(' + columns + ', minmax(0, 1fr))', gridAutoFlow: editing ? 'row' : 'row dense', gap: 12, alignItems: 'start' } },
@@ -2830,7 +2883,7 @@ function CockpitPage() {
 }
 
 // ── onboarding ───────────────────────────────────────────────────────────────────────────────────
-// Shown instead of the widgets until the cockpit has a URL and a token. Hermes' own settings form
+// Shown instead of the widgets until Coolifybrücke has a URL and a token. Hermes' own settings form
 // holds the inputs (a plugin page cannot store a secret); each step links there, and the panel
 // notices a saved value within a few seconds.
 
@@ -2887,7 +2940,7 @@ function SetupPanel({ state, data }) {
   return el(
     'section',
     { 'data-cc-setup': state, style: { ...S.col(10), maxWidth: 760 } },
-    el('h2', { style: { margin: 0, fontSize: '0.875rem', fontWeight: 600, color: T.primary } }, 'Set up the cockpit'),
+    el('h2', { style: { margin: 0, fontSize: '0.875rem', fontWeight: 600, color: T.primary } }, 'Set up Coolifybrücke'),
     off
       ? el(SetupStep, {
           n: ++n, title: 'Turn on the plugin in this profile',
@@ -2912,7 +2965,7 @@ function SetupPanel({ state, data }) {
         el(Badge, { variant: 'outline' }, 'deploy'),
         el('span', { style: S.text }, 'on all projects.'),
         el('button', { type: 'button', onClick: () => setWhy(!why), style: { background: 'none', border: 'none', padding: 0, cursor: 'pointer', color: T.tertiary, fontSize: '0.75rem', textDecoration: 'underline' } }, why ? 'Hide' : 'Why?')),
-      why ? el(Small, {}, 'Read shows your apps, deploys and servers. Deploy adds the Deploy, Restart, Stop and Start buttons. Each agent action still asks you, and the agent stays off protected environments. The token is stored in this profile; the cockpit shows only its fingerprint. If API access is off: Coolify, Settings, Advanced.') : null),
+      why ? el(Small, {}, 'Read shows your apps, deploys and servers. Deploy adds the Deploy, Restart, Stop and Start buttons. Each agent action still asks you, and the agent stays off protected environments. The token is stored in this profile; Coolifybrücke shows only its fingerprint. If API access is off: Coolify, Settings, Advanced.') : null),
     el(CheckAgain, {})
   )
 }
@@ -2988,7 +3041,7 @@ function AlertsCard() {
   const draft = async text => {
     setBusy(true)
     try {
-      await openCockpitChat(text)
+      await openChat(text)
     } finally {
       setBusy(false)
     }
@@ -3045,7 +3098,7 @@ class ChipBoundary extends Component {
 }
 
 function chipItem() {
-  return jsx(ChipBoundary, { children: jsx(CockpitChip, {}) })
+  return jsx(ChipBoundary, { children: jsx(StatusChip, {}) })
 }
 
 // Register the chip while shown, dispose it while hidden; the same id comes back only after the
@@ -3102,7 +3155,7 @@ function startStatusbar(ctx) {
   if (profile && typeof profile.listen === 'function' && typeof ctx.onDispose === 'function') ctx.onDispose(profile.listen(() => readIfHidden()))
 }
 
-function CockpitChip() {
+function StatusChip() {
   const setup = useSetup()
   const snap = useSnapshot()
   const caps = useCapabilities()
@@ -3117,11 +3170,11 @@ function CockpitChip() {
     return el(
       'button',
       {
-        'aria-label': 'Coolifybrücke is not set up yet. Open the cockpit to set it up.',
+        'aria-label': 'Coolifybrücke is not set up yet. Open Coolifybrücke to set it up.',
         className: 'inline-flex h-full items-center gap-1 px-1.5 text-[0.6875rem] tabular-nums text-(--ui-text-tertiary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground',
         onClick: () => host.navigate(PATH),
         style: { background: 'transparent', border: 'none', cursor: 'pointer' },
-        title: 'Coolifybrücke is not set up yet. Open the cockpit to set it up.',
+        title: 'Coolifybrücke is not set up yet. Open Coolifybrücke to set it up.',
         type: 'button'
       },
       el(StatusDot, { tone: 'muted' }),
@@ -3136,7 +3189,7 @@ function CockpitChip() {
   const tone = snap.error ? 'bad' : !snap.data ? 'muted' : servers.some(s => !s.reachable) ? 'bad' : failed ? 'warn' : 'good'
   const title = snap.error
     ? 'Coolifybrücke: ' + snap.error.message
-    : 'Coolify: ' + servers.filter(s => s.reachable).length + '/' + servers.length + ' servers reachable, ' + running + ' deploying, ' + failed + ' failing' + (update ? ', update available' : '') + '. Open the cockpit.'
+    : 'Coolify: ' + servers.filter(s => s.reachable).length + '/' + servers.length + ' servers reachable, ' + running + ' deploying, ' + failed + ' failing' + (update ? ', update available' : '') + '. Open Coolifybrücke.'
   return el(
     'button',
     {
@@ -3163,7 +3216,7 @@ export default {
   defaultEnabled: false,
   register(ctx) {
     pluginCtx = ctx
-    ctx.register({ id: 'page', area: ROUTES_AREA, data: { path: PATH }, render: () => jsx(CockpitPage, {}) })
+    ctx.register({ id: 'page', area: ROUTES_AREA, data: { path: PATH }, render: () => jsx(PluginPage, {}) })
     // The sidebar row: brand, show switch and position from this Desktop's storage (default 54,
     // below Kanban at 50).
     sidebarRow = startSidebarRow(ctx, { brand: 'Coolifybrücke', path: PATH, codicon: 'cloud', defaultPosition: 54, sdk: SIDEBAR_SDK })
@@ -3178,7 +3231,7 @@ export default {
     ctx.register({
       id: 'open',
       area: PALETTE_AREA,
-      data: { id: 'coolifybruecke.open', label: 'Open Coolifybrücke', keywords: ['coolify', 'cockpit', 'deploy', 'servers'], run: () => host.navigate(PATH) }
+      data: { id: 'coolifybruecke.open', label: 'Open Coolifybrücke', keywords: ['coolify', 'deploy', 'servers'], run: () => host.navigate(PATH) }
     })
     log('registered', { path: PATH })
   }

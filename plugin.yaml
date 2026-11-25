@@ -1,6 +1,6 @@
 name: coolifybruecke
-version: "0.2.8"
-description: "Coolifybrücke · a cockpit for Coolify: see what needs you across your Coolify instance, deploy with your approval, and let Hermes explain failed deploys."
+version: "0.3.0"
+description: "Coolifybrücke · for Coolify: see what needs you across your Coolify instance, deploy with your approval, and let Hermes explain failed deploys."
 author: "Studio Luftbrücke"
 license: MIT
 requires_hermes: ">=0.23.0"
@@ -10,7 +10,7 @@ provides_tools:
   - coolify_deployments
   - coolify_diagnose
   - coolify_action
-  - coolify_cockpit
+  - coolify_layout
   - coolify_notes
 provides_hooks:
   - pre_tool_call

@@ -1,5 +1,5 @@
 {
- "_source": "Shapes from Coolify 4.6.0 (recorded from a live instance); every value synthetic. 0.1.0: list_deployments:finished rows and git sources added (synthetic).",
+ "_source": "Shapes from Coolify 4.6.0 (recorded from a live instance); every value synthetic. 0.1.0: list_deployments:finished rows and git sources added (synthetic). 0.3.0: the server per resource as Coolify 4.7.6 embeds it (destination.server and additional_servers on applications and databases, server on services), trimmed to uuid and name; `multiserver` is a synthetic instance with servers app-1 and app-10.",
  "teamwide": {
   "rest": {
    "GET /api/v1/servers": [
@@ -56,9 +56,14 @@
       "destination": {
        "uuid": "dest-1",
        "name": "default",
-       "server_id": 1
+       "server_id": 1,
+       "server": {
+        "uuid": "srv-main",
+        "name": "main"
+       }
       },
-      "git_repository": "git@forgejo.example.test:22222/acme/shop.git"
+      "git_repository": "git@forgejo.example.test:22222/acme/shop.git",
+      "additional_servers": []
      },
      {
       "uuid": "app-shop-staging",
@@ -72,9 +77,14 @@
       "destination": {
        "uuid": "dest-1",
        "name": "default",
-       "server_id": 1
+       "server_id": 1,
+       "server": {
+        "uuid": "srv-main",
+        "name": "main"
+       }
       },
-      "git_repository": "git@forgejo.example.test:22222/acme/shop.git"
+      "git_repository": "git@forgejo.example.test:22222/acme/shop.git",
+      "additional_servers": []
      },
      {
       "uuid": "app-blog",
@@ -88,9 +98,14 @@
       "destination": {
        "uuid": "dest-1",
        "name": "default",
-       "server_id": 1
+       "server_id": 1,
+       "server": {
+        "uuid": "srv-main",
+        "name": "main"
+       }
       },
-      "git_repository": "acme/blog"
+      "git_repository": "acme/blog",
+      "additional_servers": []
      }
     ]
    ],
@@ -104,6 +119,7 @@
       "status": "running:healthy",
       "service_type": "umami",
       "server": {
+       "uuid": "srv-main",
        "name": "main"
       },
       "applications": [
@@ -124,7 +140,16 @@
       "name": "shop-db",
       "environment_id": 10,
       "status": "running:healthy",
-      "database_type": "standalone-postgresql"
+      "database_type": "standalone-postgresql",
+      "destination": {
+       "uuid": "dest-1",
+       "name": "default",
+       "server_id": 1,
+       "server": {
+        "uuid": "srv-main",
+        "name": "main"
+       }
+      }
      }
     ]
    ],
@@ -462,6 +487,232 @@
       "text": "{\"data\": [{\"deployment_uuid\": \"dep-ok-1\", \"application_name\": \"shop-web-staging\", \"server_name\": \"main\", \"status\": \"finished\", \"commit\": \"9999999aaaaaa\", \"commit_message\": \"Add banner\", \"pull_request_id\": 0, \"force_rebuild\": false, \"is_webhook\": true, \"is_api\": false, \"is_mcp\": false, \"deployment_url\": \"/project/proj-x/environment/env-x/application/app-shop-staging/deployment/dep-ok-1\", \"created_at\": \"2026-11-03T10:00:00.000000Z\", \"updated_at\": \"2026-11-03T10:02:30.000000Z\", \"finished_at\": \"2026-11-03T10:02:30.000000Z\", \"application_uuid\": \"app-shop-staging\"}], \"_pagination\": {\"page\": 1, \"per_page\": 100, \"total\": 1, \"total_pages\": 1}}"
      }
     ]
+   }
+  }
+ },
+ "multiserver": {
+  "rest": {
+   "GET /api/v1/servers": [
+    200,
+    [
+     {
+      "uuid": "srv-app1",
+      "name": "app-1",
+      "description": null,
+      "is_coolify_host": false,
+      "is_reachable": true,
+      "is_usable": true,
+      "proxy": {},
+      "settings": {
+       "is_metrics_enabled": false,
+       "is_reachable": true,
+       "is_usable": true
+      }
+     },
+     {
+      "uuid": "srv-app10",
+      "name": "app-10",
+      "description": null,
+      "is_coolify_host": false,
+      "is_reachable": true,
+      "is_usable": true,
+      "proxy": {},
+      "settings": {
+       "is_metrics_enabled": false,
+       "is_reachable": true,
+       "is_usable": true
+      }
+     }
+    ]
+   ],
+   "GET /api/v1/applications": [
+    200,
+    [
+     {
+      "uuid": "app-one",
+      "name": "web-one",
+      "environment_id": 30,
+      "status": "running:healthy",
+      "fqdn": "https://web-one.example.test",
+      "build_pack": "nixpacks",
+      "git_branch": "main",
+      "destination": {
+       "uuid": "dest-app-one",
+       "name": "default",
+       "server_id": 1,
+       "server": {
+        "uuid": "srv-app1",
+        "name": "app-1"
+       }
+      },
+      "additional_servers": []
+     },
+     {
+      "uuid": "app-ten",
+      "name": "web-ten",
+      "environment_id": 30,
+      "status": "running:healthy",
+      "fqdn": "https://web-ten.example.test",
+      "build_pack": "nixpacks",
+      "git_branch": "main",
+      "destination": {
+       "uuid": "dest-app-ten",
+       "name": "default",
+       "server_id": 1,
+       "server": {
+        "uuid": "srv-app10",
+        "name": "app-10"
+       }
+      },
+      "additional_servers": []
+     },
+     {
+      "uuid": "app-both",
+      "name": "web-both",
+      "environment_id": 31,
+      "status": "running:healthy",
+      "fqdn": "https://web-both.example.test",
+      "build_pack": "nixpacks",
+      "git_branch": "main",
+      "destination": {
+       "uuid": "dest-app-both",
+       "name": "default",
+       "server_id": 1,
+       "server": {
+        "uuid": "srv-app1",
+        "name": "app-1"
+       }
+      },
+      "additional_servers": [
+       {
+        "uuid": "srv-app10",
+        "name": "app-10"
+       },
+       {
+        "uuid": "srv-nameless"
+       }
+      ]
+     },
+     {
+      "uuid": "app-lost",
+      "name": "web-lost",
+      "environment_id": 31,
+      "status": "running:healthy",
+      "fqdn": "https://web-lost.example.test",
+      "build_pack": "nixpacks",
+      "git_branch": "main",
+      "destination": {
+       "uuid": "dest-app-lost",
+       "name": "default",
+       "server_id": 1
+      },
+      "additional_servers": []
+     }
+    ]
+   ],
+   "GET /api/v1/services": [
+    200,
+    [
+     {
+      "uuid": "svc-stats",
+      "name": "stats",
+      "environment_id": 30,
+      "status": "running:healthy",
+      "service_type": "umami",
+      "server_id": 2,
+      "server": {
+       "uuid": "srv-app10",
+       "name": "app-10"
+      },
+      "applications": [
+       {
+        "name": "umami",
+        "fqdn": "https://stats.example.test",
+        "status": "running:healthy"
+       }
+      ]
+     }
+    ]
+   ],
+   "GET /api/v1/databases": [
+    200,
+    [
+     {
+      "uuid": "db-main",
+      "name": "main-db",
+      "environment_id": 30,
+      "status": "running:healthy",
+      "database_type": "standalone-postgresql",
+      "destination": {
+       "uuid": "dest-db",
+       "name": "default",
+       "server_id": 1,
+       "server": {
+        "uuid": "srv-app1",
+        "name": "app-1"
+       }
+      }
+     }
+    ]
+   ],
+   "GET /api/v1/projects": [
+    200,
+    [
+     {
+      "id": 3,
+      "uuid": "proj-fleet",
+      "name": "Fleet",
+      "description": null
+     }
+    ]
+   ],
+   "GET /api/v1/projects/proj-fleet": [
+    200,
+    {
+     "id": 3,
+     "uuid": "proj-fleet",
+     "name": "Fleet",
+     "environments": [
+      {
+       "id": 30,
+       "uuid": "env-fleet-prod",
+       "name": "production",
+       "project_id": 3
+      },
+      {
+       "id": 31,
+       "uuid": "env-fleet-staging",
+       "name": "staging",
+       "project_id": 3
+      }
+     ]
+    }
+   ],
+   "GET /api/v1/deployments": [
+    200,
+    []
+   ]
+  },
+  "mcp": {
+   "list_deployments": {
+    "resultType": "complete",
+    "content": [
+     {
+      "type": "text",
+      "text": "{\"data\": [], \"total\": 0, \"per_page\": 100, \"current_page\": 1}"
+     }
+    ],
+    "isError": false
+   },
+   "list_deployments:finished": {
+    "resultType": "complete",
+    "content": [
+     {
+      "type": "text",
+      "text": "{\"data\": [], \"total\": 0, \"per_page\": 100, \"current_page\": 1}"
+     }
+    ],
+    "isError": false
    }
   }
  }

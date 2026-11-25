@@ -1,4 +1,4 @@
-"""The cockpit page's write path, run from the real desktop/plugin.js in node.
+"""The Coolifybrücke page's write path, run from the real desktop/plugin.js in node.
 
 desktop_page_harness.mjs stands in for react, react/jsx-runtime and @hermes/plugin-sdk (hooks with
 per-instance state, bubbling key and click events with the browser's Enter activation, React

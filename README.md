@@ -20,11 +20,14 @@ Hermes plugin. The full reference is in [docs/guide.md](docs/guide.md).
 - **Failed deploys, explained.** Paste a failed log and Hermes classifies it against a catalogue
   of eleven common self-hosting failures, with the evidence lines and a likely fix. Plain pattern
   matching, no model call.
-- **Your token is the permission model.** A read-only token gives a read-only cockpit. A token
+- **Your token is the permission model.** A read-only token gives a read-only Coolifybrücke. A token
   limited to staging can act only on staging. The plugin shows what your setup unlocks and why the
   rest is not available.
 - **Your layout, edited by you or Hermes.** Presets, widgets and server charts with deploy ticks.
   The page and the agent edit the same layout, and alerts can run while Desktop is closed.
+- **Which app runs where.** With more than one server, every app row names its server, a switch
+  shows one server's apps, each server card counts its resources, and the agent answers "what runs
+  on app-1?" with `coolify_overview server=app-1`.
 
 ![The Servers widget at 6 h: CPU, RAM, disk, load and network, with deploy ticks](docs/screenshot-2.png)
 
@@ -60,8 +63,15 @@ same version. With Hermes and Desktop on one computer, one install covers both.
 0.2.0 renames the plugin to Coolifybrücke: plugin `coolifybruecke`, settings `COOLIFYBRUECKE_*`,
 command `hermes coolifybruecke`, skill `coolifybruecke:coolifybruecke`. It does not read the old
 `COOLIFY_COCKPIT_*` settings, so you enter the URL and the token again under the new names. Your
-layout and your notebook (`COOLIFY.md`) come along: on first use 0.2.0 copies the files of
-`plugin-data/coolify-cockpit/` into `plugin-data/coolifybruecke/` and leaves the old folder as it is.
+layout and your notebook (`COOLIFY.md`) live in `plugin-data/coolify-cockpit/`. Versions 0.2.x
+copied them into `plugin-data/coolifybruecke/` on first use; from 0.3.0 you copy them once
+yourself, before the first start (`~/.hermes` is the profile's home; a named profile's home is
+`~/.hermes/profiles/<profile>`):
+
+```bash
+mkdir -p ~/.hermes/plugin-data/coolifybruecke
+cp -n ~/.hermes/plugin-data/coolify-cockpit/layout.json ~/.hermes/plugin-data/coolify-cockpit/COOLIFY.md ~/.hermes/plugin-data/coolifybruecke/
+```
 
 Run these where 0.1.0 is installed (on the server with `-p <profile>`, on the Desktop computer
 without):
@@ -71,7 +81,7 @@ hermes -p <profile> plugins remove coolify-cockpit
 hermes -p <profile> plugins install https://github.com/studioluftbruecke/hermes-coolifybruecke --enable
 ```
 
-`hermes plugins update coolify-cockpit`, the update command of 0.1.0, does not move you to 0.2.0.
+`hermes plugins update coolify-cockpit`, the update command of 0.1.0, does not move you to Coolifybrücke.
 Hermes stops with "The updated plugin changed its installed name; reinstall it explicitly." and
 keeps 0.1.0 installed and enabled. Run the two commands above instead.
 
@@ -192,12 +202,12 @@ https://cdn.coollabs.io/coolify/versions.json`, without any token or instance da
 every 6 hours. The tool, the overview and the page share that answer through `version-check.json`.
 
 **Git hosts (branch ahead).** For each application with a repository, a branch and a deployed
-commit, the cockpit reads the branch head at most every 10 minutes per app, or when the deployed
+commit, Coolifybrücke reads the branch head at most every 10 minutes per app, or when the deployed
 commit changes, at most 8 apps per served snapshot and 40 per alert tick:
 
 | Source | Request | Credential |
 | --- | --- | --- |
-| Forgebrücke (enabled in the same profile, repository on its host) | No request by the cockpit: an in-process call of Forgebrücke's tool `forgejo_get` with `kind=branch`, made only by the alert tick and the agent's tool calls. Forgebrücke then asks its Forgejo | Forgebrücke's own token; the cockpit never sees it |
+| Forgebrücke (enabled in the same profile, repository on its host) | No request by Coolifybrücke: an in-process call of Forgebrücke's tool `forgejo_get` with `kind=branch`, made only by the alert tick and the agent's tool calls. Forgebrücke then asks its Forgejo | Forgebrücke's own token; Coolifybrücke never sees it |
 | Git host token (repository on `git_host`, or on github.com for a GitHub-style token when `git_host` is empty) | `GET https://<host>/api/v1/repos/<owner>/<repo>/branches/<branch>` and `.../compare/<deployed>...<head>` (Forgejo or Gitea), or the same paths on `https://api.github.com` | `COOLIFYBRUECKE_GIT_TOKEN`, sent to that one host only |
 | Any other repository host | `GET https://<host>/<owner>/<repo>.git/info/refs?service=git-upload-pack` | None. A private repository answers 401 and is asked again after 6 hours |
 
@@ -220,8 +230,8 @@ request carries the user agent `hermes-coolifybruecke` and no instance data.
   chip reads the snapshot every 60 seconds and the token check every 5 minutes. It also reads the
   plugin's own settings state (`GET /setup`, no Coolify request) once a minute; while the plugin is
   off in the active profile, every 30 seconds at first and then at most every 5 minutes. While the
-  Cockpit page or its settings page is open and the setup is incomplete, that read runs every
-  4 seconds, so a saved value shows at once. The open Cockpit
+  Coolifybrücke page or its settings page is open and the setup is incomplete, that read runs every
+  4 seconds, so a saved value shows at once. The open Coolifybrücke
   page shares those reads and adds: the snapshot every 15 seconds while a deployment runs or an
   action you sent is followed, a followed deployment's history every 5 seconds until it ends, the
   availability check and the action list every 5 minutes, the server charts of a longer range
@@ -283,7 +293,7 @@ Everything the plugin writes lives in its data directory in the Hermes profile
 
 | File | Holds |
 | --- | --- |
-| `layout.json` | The cockpit layout (schema 2): widget types, sizes, settings and pinned resource names, with version, author and time of the last save. Edit it by hand if you like; it is checked on load |
+| `layout.json` | The Coolifybrücke layout (schema 2): widget types, sizes, settings and pinned resource names, with version, author and time of the last save. Edit it by hand if you like; it is checked on load |
 | `layout.json.lock` | An empty lock file, so the page and the agent never save at the same moment |
 | `COOLIFY.md` | The instance notebook |
 | `.COOLIFY.md.lock` | An empty lock file for the notebook and `observed-state.json` |
@@ -310,8 +320,8 @@ through `hermes cron list --all` (for `alerts status` and `GET /alerts`). Hermes
 ### Desktop half
 
 It talks only to this plugin's own routes (through Hermes) and to Hermes' session calls for the
-cockpit chat (create a session titled "Cockpit", open it as a tab, fill its draft; it never sends).
-The Alerts card's button uses the same chat. It stores one value on your machine, the Cockpit
+Coolifybrücke chat (create a session titled "Coolifybrücke", open it as a tab, fill its draft; it never sends).
+The Alerts card's button uses the same chat. It stores one value on your machine, the Coolifybrücke
 chat's session id per profile, in Hermes Desktop's plugin storage. Links open in your browser
 through Desktop; where Desktop cannot open one, a notice names the address.
 Other plugins can link to one app with the in-app path `/coolifybruecke?app=<uuid>`: the page

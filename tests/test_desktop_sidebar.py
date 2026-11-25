@@ -11,7 +11,7 @@ entry by id (as Desktop's registry does), and checks what this plugin wires up:
   names a command that exists;
 - the settings page "Coolifybrücke" renders the Sidebar section bound to that same row: the switch
   hides the row and stores the choice, the field moves it, the hint names the palette row;
-- the chat tab title stays "Cockpit" (the brand names the plugin, not the chat).
+- the chat tab title is "Coolifybrücke", the plugin's name.
 
 Run from the plugin folder: python3 -m pytest tests -q --import-mode=importlib
 """
@@ -162,5 +162,5 @@ def test_sidebar_row_and_section(results, case):
     assert results.get(case) is True, f"{case}: {results}"
 
 
-def test_chat_tab_title_stays_cockpit():
-    assert re.search(r"^const SESSION_TITLE = 'Cockpit'$", PLUGIN_JS.read_text(encoding="utf-8"), re.M)
+def test_chat_tab_title_is_the_brand():
+    assert re.search(r"^const SESSION_TITLE = 'Coolifybrücke'$", PLUGIN_JS.read_text(encoding="utf-8"), re.M)

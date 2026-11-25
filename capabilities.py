@@ -598,16 +598,16 @@ def setup_warnings(tokens: list[TokenInfo], facts: InstanceFacts, notes: tuple[s
         if held & {Ability.WRITE, Ability.DELETE}:
             rights = " and ".join(a.value for a in (Ability.WRITE, Ability.DELETE) if a in held)
             warnings.append(f"The {token.role.word} holds {rights}: it can change or delete "
-                            "resources. The cockpit does not use these rights, but anything that holds "
+                            "resources. Coolifybrücke does not use these rights, but anything that holds "
                             "the token can.")
         if Ability.READ_SENSITIVE in held:
             where = "for the whole team" if token.scoped is False else "inside its scope"
             warnings.append(f"The {token.role.word} holds read:sensitive: logs and environment "
-                            f"values are readable {where}, so they can reach the model (the cockpit "
+                            f"values are readable {where}, so they can reach the model (Coolifybrücke "
                             "redacts known secret patterns; still disclosed).")
         if token.role is Role.OVERVIEW and held - {Ability.READ}:
             extra = ", ".join(a.value for a in Ability if a in held and a is not Ability.READ)
-            warnings.append(f"The read-only token also holds {extra}. The cockpit uses it only for reads; "
+            warnings.append(f"The read-only token also holds {extra}. Coolifybrücke uses it only for reads; "
                             "a read-only token is enough.")
         if any(v is None for v in token.abilities.values()):
             warnings.append(f"Some rights of the {token.role.word} could not be determined "
@@ -860,7 +860,7 @@ def cached_version_status(client: CoolifyClient, *, check_updates: bool, path: O
 # After a token is saved, one line replaces the setup explanation (the result of the token check):
 #   "Team-wide · read, deploy · 28 apps · 2 servers"
 #   "Limited to 5 projects · read, deploy · no servers"   + the button "Add a read-only token"
-# A token holding write or delete adds one amber chip "can change and delete"; the cockpit never
+# A token holding write or delete adds one amber chip "can change and delete"; Coolifybrücke never
 # calls those rights. Built from the model dict `to_model_dict` returns, so the page, the settings
 # page and the tests read one function.
 
@@ -907,6 +907,6 @@ def result_line(model: Mapping[str, Any]) -> dict[str, Any]:
     if held & {"write", "delete"}:
         both = " and ".join(r for r in ("write", "delete") if r in held)
         out["chip"] = WARN_CHIP
-        out["chip_detail"] = (f"This token holds {both}. The cockpit never uses them, but anything that holds the "
+        out["chip_detail"] = (f"This token holds {both}. Coolifybrücke never uses them, but anything that holds the "
                               "token can.")
     return out

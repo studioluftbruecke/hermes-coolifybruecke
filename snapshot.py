@@ -1,4 +1,4 @@
-"""The cockpit's read model: one Snapshot of servers, resources and deployments, cached 10 s.
+"""Coolifybrücke's read model: one Snapshot of servers, resources and deployments, cached 10 s.
 
 A Snapshot answers "what is going on?" in one read. It follows the token routing rule: every call
 goes to the token with the widest view (team-wide before scoped; among equals the one that sees
@@ -57,12 +57,14 @@ try:
     from .coolify_client import (CoolifyClient, CoolifyError, ErrorKind, HttpResponse, LimitWatch,
                                  Transport, fingerprint, urllib_transport)
     from .redact import COMMIT_NOTE, commit_subject
+    from .references import find_server
 except ImportError:  # loaded as a top-level module (tests, scripts)
     import fleet as fleet_mod  # type: ignore
     from capabilities import OVERVIEW_HINT, Connection, Role, TokenSlot  # type: ignore
     from coolify_client import (CoolifyClient, CoolifyError, ErrorKind, HttpResponse,  # type: ignore
                                 LimitWatch, Transport, fingerprint, urllib_transport)
     from redact import COMMIT_NOTE, commit_subject  # type: ignore
+    from references import find_server  # type: ignore
 
 CACHE_TTL_S = 10.0
 LIST_ROWS = 100       # rows per MCP list_deployments call (Coolify's page maximum)
@@ -125,6 +127,7 @@ class Resource:
     last_deployment: Optional[dict] = None  # not filled in the snapshot; see deployment_history
     git_repository: Optional[str] = None    # applications: as Coolify stores it (ssh, https or owner/repo)
     git_branch: Optional[str] = None
+    servers: list[str] = field(default_factory=list)  # server names, primary first; [] = unknown
 
 
 @dataclass
@@ -219,7 +222,7 @@ def _str(value: Any) -> Optional[str]:
 def mcp_tool(client: CoolifyClient, name: str, arguments: dict[str, Any]) -> Any:
     """Call one read tool of Coolify's MCP server and return its parsed JSON payload."""
     if name not in READ_MCP_TOOLS:
-        raise ValueError(f"{name} is not a read tool the cockpit uses")
+        raise ValueError(f"{name} is not a read tool Coolifybrücke uses")
     result = client.mcp_call("tools/call", {"name": name, "arguments": arguments})
     content = (result or {}).get("content") if isinstance(result, dict) else None
     text = content[0].get("text", "") if isinstance(content, list) and content else ""
@@ -365,6 +368,25 @@ def _fqdn(kind: str, row: dict) -> Optional[str]:
     return _str(row.get("fqdn"))
 
 
+def _server_names(kind: str, row: dict) -> list[str]:
+    """The names of the servers a list row runs on, primary first. Only the name is copied: the
+    nested server object also carries its IP, key id and provider ids, which stay out."""
+    def name(obj: Any) -> Optional[str]:
+        return _str(obj.get("name")) if isinstance(obj, dict) else None
+
+    if kind == "service":
+        found = [name(row.get("server"))]
+    else:
+        destination = row.get("destination") if isinstance(row.get("destination"), dict) else {}
+        extra = row.get("additional_servers") if isinstance(row.get("additional_servers"), list) else []
+        found = [name(destination.get("server"))] + [name(x) for x in extra]
+    out: list[str] = []
+    for n in found:
+        if n and n not in out:
+            out.append(n)
+    return out
+
+
 def _resources(rows_by_kind: dict[str, list], envs: dict[int, tuple[str, str]]) -> list[Resource]:
     out: list[Resource] = []
     for kind in KINDS:
@@ -377,7 +399,8 @@ def _resources(rows_by_kind: dict[str, list], envs: dict[int, tuple[str, str]]) 
                                 project=project, environment=environment, status=_str(row.get("status")),
                                 fqdn=_fqdn(kind, row),
                                 git_repository=_str(row.get("git_repository")) if app else None,
-                                git_branch=_str(row.get("git_branch")) if app else None))
+                                git_branch=_str(row.get("git_branch")) if app else None,
+                                servers=_server_names(kind, row)))
     out.sort(key=lambda r: ((r.project or "~").lower(), (r.environment or "").lower(), r.kind, r.name.lower()))
     return out
 
@@ -672,7 +695,7 @@ def build_snapshot(connection: Connection, *, transport: Transport = urllib_tran
         if error is not None and error.kind is ErrorKind.RATE_LIMITED:
             raise error
         limits.append("Failing apps and the latest deploys need Coolify's MCP server (Coolify: Settings, "
-                      f"Advanced, API and MCP); it answered {error.kind.value if error else '?'}. The cockpit "
+                      f"Advanced, API and MCP); it answered {error.kind.value if error else '?'}. Coolifybrücke "
                       f"reads each app's history instead, every {int(FALLBACK_TTL_S // 60)} minutes.")
         now = time.time()
         for uuid in app_uuids:
@@ -968,6 +991,120 @@ def _matches(r: dict, project: Optional[str], environment: Optional[str]) -> boo
             and (not environment or environment.lower() in (r.get("environment") or "").lower()))
 
 
+# --- servers per resource (F18) -----------------------------------------------------------------
+
+def known_server_names(snap: dict) -> list[str]:
+    """Every distinct server name the snapshot knows: GET /servers first, then the rows' own."""
+    out: list[str] = []
+    for name in [s.get("name") for s in snap.get("servers") or []] + \
+            [n for r in snap.get("resources") or [] for n in r.get("servers") or []]:
+        if name and name not in out:
+            out.append(str(name))
+    return out
+
+
+def multi_server(snap: dict) -> bool:
+    """More than one server, and at least one row that names its server: only then does the
+    server add information to a row."""
+    return len(known_server_names(snap)) > 1 and any(r.get("servers") for r in snap.get("resources") or [])
+
+
+def on_servers(servers: list) -> str:
+    return " + ".join(servers) if servers else "server unknown"
+
+
+def unknown_server_cause(snap: dict) -> str:
+    if (snap.get("source") or {}).get("scope") == "scoped":
+        return "this token cannot read servers. To unlock: " + OVERVIEW_HINT
+    return "Coolify did not name their server"
+
+
+@dataclass(frozen=True)
+class ServerFilter:
+    """`server=` resolved to one server name, or the reason it filters nothing."""
+    name: Optional[str] = None
+    uuid: Optional[str] = None
+    problem: Optional[str] = None
+
+
+def resolve_server(snap: dict, query: Optional[str]) -> Optional[ServerFilter]:
+    """None without a query. A name or uuid (any case), or a part of a name that fits one server,
+    over GET /servers, or over the rows' names when the token reads no servers."""
+    q = (query or "").strip()
+    if not q:
+        return None
+    candidates = [{"uuid": str(s.get("uuid") or ""), "name": str(s.get("name") or "")}
+                  for s in snap.get("servers") or [] if s.get("name")]
+    if not candidates:
+        candidates = [{"uuid": "", "name": n} for n in known_server_names(snap)]
+    if not candidates:
+        return ServerFilter(problem=f"No server names are known, so server={q!r} filters nothing: "
+                                    + unknown_server_cause(snap) + ".")
+    hit = find_server(candidates, q)
+    if hit is not None:
+        return ServerFilter(name=hit["name"], uuid=hit["uuid"] or None)
+    names = ", ".join(c["name"] for c in candidates)
+    fits = [c["name"] for c in candidates if q.lower() in c["name"].lower()]
+    if fits:
+        return ServerFilter(problem=f"server={q!r} fits {len(fits)} servers ({', '.join(fits)}), so it filters "
+                                    f"nothing; pass the full name. Servers: {names}.")
+    return ServerFilter(problem=f"No server matches server={q!r}, so it filters nothing. Servers: {names}.")
+
+
+def server_counts(resources: list[dict]) -> str:
+    counts = {k: sum(1 for r in resources if r.get("kind") == k) for k in KINDS}
+    return (f"{len(resources)} resources: {counts['application']} applications, {counts['service']} services, "
+            f"{counts['database']} databases")
+
+
+def server_listing(resources: list[dict]) -> list[str]:
+    """One line per project and environment with the names only: the compact list of a server."""
+    groups: dict[tuple, list[str]] = {}
+    for r in resources:
+        groups.setdefault((r.get("project") or "?", r.get("environment") or "?"), []).append(str(r.get("name")))
+    return [f"{proj} / {env}: {', '.join(names)}" for (proj, env), names in groups.items()]
+
+
+def _fit_names(lines: list[str], budget: int, server: str) -> list[str]:
+    """A server listing cut to `budget` characters name by name, ending with how many it left out."""
+    if sum(len(x) + 1 for x in lines) <= budget:
+        return lines
+    room = budget - 60
+    kept: list[str] = []
+    left = 0
+    for line in lines:
+        group, names = line.split(": ", 1)
+        names = names.split(", ")
+        if left:
+            left += len(names)
+            continue
+        take: list[str] = []
+        used = sum(len(x) + 1 for x in kept) + len(group) + 3
+        for name in names:
+            if used + len(name) + 2 > room:
+                break
+            take.append(name)
+            used += len(name) + 2
+        if take:
+            kept.append(f"{group}: {', '.join(take)}")
+        left += len(names) - len(take)
+    return kept + [f"... {left} more names on {server} not listed"]
+
+
+def _fit(lines: list[str], budget: int, more: Callable[[list[str]], str]) -> list[str]:
+    """`lines` while they fit in `budget` characters; when cut, the last line says what is left."""
+    if sum(len(x) + 1 for x in lines) <= budget:
+        return lines
+    kept: list[str] = []
+    used = 0
+    for i, line in enumerate(lines):
+        if used + len(line) + 1 + 90 > budget:
+            return kept + [more(lines[i:])]
+        kept.append(line)
+        used += len(line) + 1
+    return kept
+
+
 def _attention_line(a: dict, by_uuid: dict[str, dict]) -> str:
     fix = f" [fix: {a['fix']}]" if a.get("fix") else ""
     word = "at" if a.get("signal") == "env_changed" else "since"
@@ -981,12 +1118,19 @@ LATEST_IN_OVERVIEW = 8
 
 
 def render_overview(snap: dict, *, project: Optional[str] = None, environment: Optional[str] = None,
-                    max_chars: int = MAX_OVERVIEW_CHARS, attention: Optional[list] = None) -> str:
-    """Compact text for the model, never longer than `max_chars`. Opens with what needs the user."""
+                    server: Optional[str] = None, max_chars: int = MAX_OVERVIEW_CHARS,
+                    attention: Optional[list] = None) -> str:
+    """Compact text for the model, never longer than `max_chars`. Opens with what needs the user;
+    with a server filter, the complete list of that server's resources follows right after."""
     resources = snap.get("resources") or []
     by_uuid = {r["uuid"]: r for r in resources}
-    filtered = bool(project or environment)
-    shown = [r for r in resources if _matches(r, project, environment)]
+    target = resolve_server(snap, server)
+    on = target.name if target is not None and target.name else None
+    multi = multi_server(snap)
+    filtered = bool(project or environment or on)
+    narrowed = [r for r in resources if _matches(r, project, environment)]
+    shown = [r for r in narrowed if not on or on in (r.get("servers") or [])]
+    unknown = [r for r in narrowed if on and not r.get("servers")]
     shown_uuids = {r["uuid"] for r in shown}
     cache = snap.get("cache") or {}
     stats = snap.get("stats") or {}
@@ -997,69 +1141,98 @@ def render_overview(snap: dict, *, project: Optional[str] = None, environment: O
             f"{source.get('scope')}; "
             f"{stats.get('calls')} calls in {(stats.get('duration_ms') or 0) / 1000:.1f} s)"]
     if filtered:
-        head.append(f"Filter: project~{project or '*'} environment~{environment or '*'} "
-                    f"({len(shown)} of {len(resources)} resources)")
+        head.append(f"Filter: project~{project or '*'} environment~{environment or '*'}"
+                    + (f" server={on}" if on else "") + f" ({len(shown)} of {len(resources)} resources)")
+    if target is not None and target.problem:
+        head.append(target.problem)
 
-    items = [a for a in (attention if attention is not None else snap.get("attention") or [])
-             if not filtered or not a.get("resource_uuid") or a.get("resource_uuid") in shown_uuids]
+    def kept_item(a: dict) -> bool:
+        if a.get("resource_uuid"):
+            return not filtered or a["resource_uuid"] in shown_uuids
+        if a.get("server_uuid") and on:
+            return a["server_uuid"] == target.uuid
+        return True
+
+    items = [a for a in (attention if attention is not None else snap.get("attention") or []) if kept_item(a)]
     if items:
-        lines = head + [f"NEEDS YOU ({len(items)}), worst first:"] + [_attention_line(a, by_uuid) for a in items]
+        top = head + [f"NEEDS YOU ({len(items)}), worst first:"] + [_attention_line(a, by_uuid) for a in items]
     else:
-        lines = head + ["NEEDS YOU: nothing. No app is failing, no server is down."]
+        top = head + ["NEEDS YOU: nothing. No app is failing, no server is down."]
 
-    servers = snap.get("servers") or []
-    lines += [f"SERVERS ({len(servers)})"] + ([_server_line(s) for s in servers] or ["- none readable"])
-
-    deps = snap.get("deployments") or {}
-    running = [d for d in deps.get("running") or [] if not filtered or d.get("resource_uuid") in shown_uuids]
-    lines.append(f"DEPLOYMENTS running or queued: {len(running) or 'none'}")
-    lines += [_deployment_line(d, by_uuid) + f" status {d.get('status')}" for d in running]
-    latest = snap.get("latest_deployments")
-    if latest is None:
-        lines.append("Latest deploys: unknown (see LIMITS)")
-    else:
-        latest = [d for d in latest if d.get("status") in ("finished", "failed")
-                  and (not filtered or d.get("resource_uuid") in shown_uuids)][:LATEST_IN_OVERVIEW]
-        lines.append(f"LATEST DEPLOYS, newest first, all environments (times UTC; {COMMIT_NOTE}):" if latest
-                     else "Latest deploys: none in the window")
-        lines += [_deployment_line(d, by_uuid) + f" {d.get('status')}"
-                  + (" (fixed since by a later deploy)" if d.get("superseded") else "")
-                  + (f" via {d['trigger']}" if d.get("trigger") else "") for d in latest]
-
-    counts = {k: sum(1 for r in shown if r["kind"] == k) for k in KINDS}
-    lines.append(f"RESOURCES: {counts['application']} applications, {counts['service']} services, "
-                 f"{counts['database']} databases")
-    down = [r for r in shown if (r.get("status") or "") not in RUNNING_OK]
-    if down:
-        lines.append(f"Not running or unhealthy ({len(down)}):")
-        lines += [f"- {r['name']} ({r['kind']}, {r.get('project')} / {r.get('environment')}): {r.get('status')}"
-                  for r in down]
     tail = []
     if snap.get("limits"):
         tail += ["LIMITS"] + [f"- {x}" for x in snap["limits"]]
     if snap.get("errors"):
         tail += ["ERRORS"] + [f"- {x}" for x in snap["errors"]]
 
+    def size(parts: list[str]) -> int:
+        return sum(len(p) + 1 for p in parts)
+
+    on_server: list[str] = []
+    if on:
+        on_server = _fit_names(server_listing(shown), max_chars - size(top) - size(tail) - 200, on)
+        on_server = [f"ON SERVER {on} ({server_counts(shown)})"] + (on_server or ["- none"])
+        if unknown:
+            on_server.append(f"{len(unknown)} resources with unknown server not listed: {unknown_server_cause(snap)}")
+
+    middle: list[str] = []
+    servers = [s for s in snap.get("servers") or [] if not on or s.get("name") == on]
+    middle += [f"SERVERS ({len(servers)})"] + ([_server_line(s) for s in servers] or ["- none readable"])
+    deps = snap.get("deployments") or {}
+    running = [d for d in deps.get("running") or [] if not filtered or d.get("resource_uuid") in shown_uuids]
+    middle.append(f"DEPLOYMENTS running or queued: {len(running) or 'none'}")
+    middle += [_deployment_line(d, by_uuid) + f" status {d.get('status')}" for d in running]
+    latest = snap.get("latest_deployments")
+    if latest is None:
+        middle.append("Latest deploys: unknown (see LIMITS)")
+    else:
+        latest = [d for d in latest if d.get("status") in ("finished", "failed")
+                  and (not filtered or d.get("resource_uuid") in shown_uuids)][:LATEST_IN_OVERVIEW]
+        middle.append(f"LATEST DEPLOYS, newest first, all environments (times UTC; {COMMIT_NOTE}):" if latest
+                      else "Latest deploys: none in the window")
+        middle += [_deployment_line(d, by_uuid) + f" {d.get('status')}"
+                   + (" (fixed since by a later deploy)" if d.get("superseded") else "")
+                   + (f" via {d['trigger']}" if d.get("trigger") else "") for d in latest]
+    counts = {k: sum(1 for r in shown if r["kind"] == k) for k in KINDS}
+    middle.append(f"RESOURCES: {counts['application']} applications, {counts['service']} services, "
+                  f"{counts['database']} databases")
+    down = [r for r in shown if (r.get("status") or "") not in RUNNING_OK]
+    if down:
+        middle.append(f"Not running or unhealthy ({len(down)}):")
+        middle += [f"- {r['name']} ({r['kind']}, {r.get('project')} / {r.get('environment')}): {r.get('status')}"
+                   for r in down]
+    middle = _fit(middle, max_chars - size(top) - size(on_server) - size(tail) - 120,
+                  lambda rest: "... cut at the size cap")
+
+    narrow = "project=, environment= or server=" if multi else "project= or environment="
     groups: dict[tuple, list[dict]] = {}
     for r in shown:
         groups.setdefault((r.get("project") or "?", r.get("environment") or "?"), []).append(r)
     listing = ["BY PROJECT (name kind status domain)"]
-    for (proj, env), items in groups.items():
-        listing.append(f"{proj} / {env}:")
-        for r in items:
+    for (proj, env), rows in groups.items():
+        sets = {tuple(r.get("servers") or []) for r in rows}
+        group_suffix = multi and not on and len(sets) == 1
+        listing.append(f"{proj} / {env}:" + (f" @ {on_servers(list(next(iter(sets))))}" if group_suffix else ""))
+        for r in rows:
             domain = (r.get("fqdn") or "").split(",")[0]
-            listing.append(f"  {r['name']} {r['kind'][:3]} {r.get('status') or '?'}" + (f" {domain}" if domain else ""))
+            where = r.get("servers") or []
+            suffix = ""
+            if on and where != [on]:
+                suffix = f" @ {on_servers(where)}"
+            elif multi and not on and not group_suffix:
+                suffix = f" @ {on_servers(where)}"
+            listing.append(f"  {r['name']} {r['kind'][:3]} {r.get('status') or '?'}"
+                           + (f" {domain}" if domain else "") + suffix)
 
-    def size(parts: list[str]) -> int:
-        return sum(len(p) + 1 for p in parts)
-
+    lines = top + on_server + middle
     budget = max_chars - size(lines) - size(tail) - 120
     kept: list[str] = []
     for line in listing:
         if size(kept) + len(line) + 1 > budget:
             hidden = sum(1 for x in listing[len(kept):] if x.startswith("  "))
-            kept.append(f"... {hidden} more resources not listed; call coolify_overview with project= "
-                        "or environment= to narrow")
+            if len(kept) > 1 and not kept[-1].startswith("  "):
+                kept.pop()  # a group header with none of its rows
+            kept.append(f"... {hidden} more resources not listed; call coolify_overview with {narrow} to narrow")
             break
         kept.append(line)
     text = "\n".join(lines + kept + tail)
